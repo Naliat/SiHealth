@@ -1,0 +1,55 @@
+# 🐍 Ambientes virtuais
+venv/
+.env/
+.env.*
+
+# 📦 Dependências e cache do Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# 🗂️ Arquivos temporários e logs
+*.log
+*.pot
+*.mo
+*.sqlite3
+*.db
+*.pid
+*.tmp
+
+# 🧱 Arquivos de build / distribuição
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# 🧰 Configurações do editor e IDEs
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# 📜 Arquivos de sistema (Windows/Linux/macOS)
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# 🧩 Cache de pacotes e ferramentas
+pip-wheel-metadata/
+.pytest_cache/
+migrations/
+site/
+node_modules/
+
+# 🧠 Arquivos de ambiente e credenciais
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+
+# 🗃️ Banco de dados local (caso use MongoDB local)
+data/
+dump/
