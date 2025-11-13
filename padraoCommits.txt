@@ -1,0 +1,44 @@
+# Padrao Conventional Commits
+# Formato: <tipo>(<escopo opcional>): <descricao>
+
+# Exemplo de Comando no Terminal:
+# git commit -m "feat(backend): Adiciona rota POST para cadastro de usuario"
+
+# =================================================================
+# 1. TIPOS DE COMMIT MAIS COMUNS
+# =================================================================
+
+# 🚀 feat: Uma nova funcionalidade (feature)
+# Ex: feat(frontend): Implementa pagina de Dashboard
+# Ex: feat(backend): Adiciona validacao JWT na rota de login
+
+# 🐛 fix: Correcao de um bug no codigo
+# Ex: fix(usuario): Corrige erro de validacao de email no cadastro
+# Ex: fix(cronograma): Ajusta calculo da proxima revisao
+
+# 🧹 refactor: Mudancas que nao corrigem bugs nem adicionam features
+# Ex: refactor(service): Reorganiza funcoes do estudo_service
+# Ex: refactor: Padroniza as funcoes de callback
+
+# 💄 style: Mudancas de formatacao que nao afetam o codigo (espacos, ponto e virgula, linting)
+# Ex: style(css): Aplica padrao de cores no CardEstudo
+# Ex: style(python): Remove espacos em branco desnecessarios (PEP8)
+
+# 📚 docs: Mudancas na documentacao (README, docstrings, comentarios)
+# Ex: docs: Atualiza o README com a estrutura do projeto
+# Ex: docs(api): Adiciona documentacao da rota de revisoes
+
+# 🧪 test: Adicao, correcao ou remocao de testes
+# Ex: test(backend): Adiciona testes unitarios para usuario_service
+# Ex: test: Corrige falha no teste de integracao
+
+# ⚙️ chore: Mudancas de rotina/manutencao que nao afetam o codigo da aplicacao (builds, dependencias)
+# Ex: chore(deps): Atualiza versao do Flask-PyMongo
+# Ex: chore(vite): Adiciona configuracao de proxy no vite.config.js
+
+# 📦 build: Mudancas que afetam o sistema de build ou dependencias externas (npm, requirements.txt)
+# Ex: build: Adiciona dotenv no requirements.txt
+# Ex: build: Atualiza versao do React no package.json
+
+# ⚡ perf: Melhoria de performance (desempenho)
+# Ex: perf(query): Otimiza busca de estudos no MongoDB
