@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Entrada - SiHealth</title>
+    <link rel="stylesheet" href="../style/registrarRemedio.css">
+</head>
+<body>
+
+<div class="sidebar">
+    <h2 class="logo">SiHealth</h2>
+
+    <ul class="menu">
+        <li>Dashboard</li>
+        <li>Lista de Remédios</li>
+        <li class="active">Registrar Entrada</li>
+        <li>Registrar Saída</li>
+    </ul>
+
+    <ul class="bottom-menu">
+        <li>Configurações</li>
+        <li>Sair</li>
+    </ul>
+</div>
+
+<div class="content">
+    <header>
+        <h1>Registrar Entrada</h1>
+        <p>Registro de entrada no estoque</p>
+        <div class="user-box">
+            <span class="user-icon">👤</span>
+            <span>Usuário</span>
+        </div>
+    </header>
+
+    <div class="card">
+        <h2>Dados do Remédio:</h2>
+
+        <div class="form-row">
+            <label>Código do Produto:</label>
+            <input type="text">
+        </div>
+
+        <div class="form-row">
+            <label>Nome do remédio:</label>
+            <input type="text">
+        </div>
+
+        <div class="form-row small">
+            <label>Dosagem:</label>
+            <input type="number"> <span>mg</span>
+        </div>
+
+        <div class="form-row small">
+            <label>Quantidade:</label>
+            <input type="number"> <span>/ Caixa</span>
+        </div>
+
+        <div class="form-row small">
+            <label>Caixas:</label>
+            <input type="number" min="0">
+        </div>
+
+        <div class="form-row">
+            <label>Validade:</label>
+            <input type="date">
+        </div>
+
+        <div class="form-row">
+            <label>Princípio Ativo:</label>
+            <input type="text">
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Informações do Fabricante:</h2>
+
+        <div class="form-row">
+            <label>Lote:</label>
+            <input type="text">
+        </div>
+
+        <div class="form-row">
+            <label>Fabricante:</label>
+            <input type="text">
+        </div>
+
+        <div class="form-row">
+            <label>Registro MS:</label>
+            <input type="text">
+        </div>
+    </div>
+
+    <button class="btn">Concluir</button>
+</div>
+
+<script src="../js/registrarRemedio.js"></script>
+</body>
+</html>
