@@ -165,3 +165,78 @@ input:focus {
     background: #455fe0;
     transform: translateY(-1px);
 }
+
+@media (max-width: 768px) {
+
+    body {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        padding: 16px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .menu, .bottom-menu {
+        display: none;
+    }
+
+    .logo {
+        margin: 0;
+        font-size: 20px;
+    }
+
+    .content {
+        padding: 20px;
+    }
+
+    header h1 {
+        font-size: 22px;
+    }
+
+    header p {
+        font-size: 13px;
+    }
+
+    .user-box {
+        position: static;
+        margin-top: 15px;
+        align-self: flex-end;
+        transform: scale(0.95);
+    }
+
+    .card {
+        padding: 18px;
+        margin-top: 20px;
+    }
+
+    .card h2 {
+        font-size: 18px;
+    }
+
+    input {
+        width: 100%;
+    }
+
+    .form-row.small {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .form-row.small span {
+        margin-top: -5px;
+        margin-left: 0;
+    }
+
+    .btn {
+        width: 100%;
+        text-align: center;
+        padding: 14px;
+        font-size: 16px;
+    }
+}
