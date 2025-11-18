@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="utf-8">
+  <title>Cadastro de Usuários</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+    }
+
+    form {
+      display: grid;
+      gap: .75rem;
+      max-width: 360px;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    input,
+    button {
+      padding: .6rem .8rem;
+      font-size: 1rem;
+    }
+
+    .lista {
+      margin-top: 2rem;
+    }
+
+    .card {
+      border: 1px solid #ddd;
+      padding: .5rem;
+      border-radius: .4rem;
+      margin-bottom: .5rem;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Cadastro de usuários</h1>
+
+  <form id="formCadastro">
+    <label>Nome
+      <input name="nome" type="text" required>
+    </label>
+    <label>Email
+      <input name="email" type="email" required>
+    </label>
+    <button type="submit">Cadastrar</button>
+  </form>
+
+  <div class="lista">
+    <h2>Usuários cadastrados</h2>
+    <div id="usuarios"></div>
+  </div>
+
+  <script>
+    const API = "http://127.0.0.1:8000";
+
+    async function carregarUsuarios() {
+      const res = await fetch(`${API}/users/`);
+      const data = await res.json();
+      const cont = document.getElementById('usuarios');
+      cont.innerHTML = '';
+      data.forEach(u => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.textContent = `${u.nome} — ${u.email}`;
+        cont.appendChild(div);
+      });
+    }
+
+    document.getElementById('formCadastro').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const dados = new FormData(form);
+
+      const res = await fetch(`${API}/users/`, {
+        method: 'POST',
+        body: dados
+      });
+
+      if (res.ok) {
+        form.reset();
+        await carregarUsuarios();
+        alert('Cadastrado com sucesso!');
+      } else {
+        alert('Erro ao cadastrar');
+      }
+    });
+
+    carregarUsuarios();
+  </script>
+</body>
+
+</html>
