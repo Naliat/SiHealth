@@ -8,7 +8,7 @@ class Medicamento(Model):
     dosagem: str
     categoria: str
     descricao: str | None = None
-    criado_em: datetime = Field(default_factory=datetime.utcnow)
+    criado_em: datetime = Field(default_factory=datetime.now)
 
     model_config = {
         "collection": "medicamentos"
