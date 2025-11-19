@@ -1,6 +1,8 @@
+"""
 from fastapi import APIRouter, Form
 from database import engine
-from models import User
+from backend.models.models import User
+
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -13,3 +15,5 @@ async def create_user(nome: str = Form(...), email: str = Form(...)):
 @router.get("/")
 async def list_users():
     return await engine.find(User)
+"""
+
