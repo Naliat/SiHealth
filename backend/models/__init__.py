@@ -5,19 +5,24 @@ Exporta todas as classes de modelo para importação conveniente
 """
 
 from .medicamento import Medicamento
+from .usuario import Usuario
+from .paciente import Paciente
+
 """
 from .lote import Lote
-from .paciente import Paciente
-from .usuario import Usuario
+
+
 from .entrada import Entrada
 from .saida import Saida
 """
 
 __all__ = [
     "Medicamento",
-"""    "Lote", 
-    "Paciente",
     "Usuario",
+    "Paciente",
+"""    "Lote", 
+
+    ,
     "Entrada",
     "Saida"
 """

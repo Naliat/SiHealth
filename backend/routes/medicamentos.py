@@ -49,7 +49,7 @@ async def update_medicamento(med_id: str, data: Medicamento):
         raise HTTPException(404, "Medicamento não encontrado")
 
     # Atualiza apenas os campos enviados
-    update_data = data.dict(exclude_unset=True)
+    update_data = data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(medicamento, field, value)
 
