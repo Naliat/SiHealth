@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import users
+#from routes import users
 
 app = FastAPI(title="Meu Backend com FastAPI + MongoDB")
 
@@ -12,4 +12,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(users.router)
+#app.include_router(users.router)
