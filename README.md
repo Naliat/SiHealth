@@ -57,3 +57,79 @@ flowchart TD
     D2 --> D2b[Relatórios simples: estoque baixo]
     D2 --> D2c[Feedback: entrada registrada, saída registrada, estoque insuficiente]
     D2 --> D2d[Critérios: fluxo completo UI, estoque e histórico atualizados, validações ok]
+
+
+----
+Diagrama do banco
+
+erDiagram
+
+    MEDICAMENTO {
+        int id_medicamento PK
+        string nome
+        string fabricante
+        string principio_ativo
+        string dosagem
+        string categoria
+        string descricao
+        datetime criado_em
+    }
+
+    LOTE {
+        int id_lote PK
+        int id_medicamento FK
+        string numero_lote UK
+        string numero_caixa
+        int quantidade_por_caixa
+        int quantidade_inicial
+        int quantidade_atual
+        date data_fabricacao
+        date data_validade
+        datetime criado_em
+    }
+
+    ENTRADA {
+        int id_entrada PK
+        int id_lote FK
+        int id_usuario FK
+        int quantidade
+        datetime data_entrada
+        string fornecedor
+    }
+
+    SAIDA {
+        int id_saida PK
+        int id_lote FK
+        int id_paciente FK
+        int id_usuario_responsavel FK
+        int numero_de_caixas_entregues
+        int quantidade_por_caixa
+        int quantidade_total_entregue
+        datetime data_saida
+        string observacao
+    }
+
+    PACIENTE {
+        int id_paciente PK
+        string CNS UK
+        string nome
+        date data_nascimento
+        string sexo
+        string cpf UK
+        datetime criado_em
+    }
+
+    USUARIO {
+        int id_usuario PK
+        string nome
+        string email UK
+        string senha_hash
+        datetime criado_em
+    }
+
+    MEDICAMENTO ||--o{ LOTE : "possui"
+    LOTE ||--o{ ENTRADA : "registra"
+    LOTE ||--o{ SAIDA : "gera"
+    PACIENTE ||--o{ SAIDA : "recebe"
+    USUARIO ||--o{ ENTRADA : "realiza"
+    USUARIO ||--o{ SAIDA : "autoriza"
