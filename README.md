@@ -1,7 +1,6 @@
 ### Demo
 [sihealth.netlify.app](https://sihealth.netlify.app/)
 
-
 ## 📌 Roadmap do Projeto
 
 ```mermaid
@@ -57,10 +56,6 @@ flowchart TD
     D2 --> D2b[Relatórios simples: estoque baixo]
     D2 --> D2c[Feedback: entrada registrada, saída registrada, estoque insuficiente]
     D2 --> D2d[Critérios: fluxo completo UI, estoque e histórico atualizados, validações ok]
-
-
-----
-Diagrama do banco
 
 erDiagram
 
