@@ -56,7 +56,9 @@ flowchart TD
     D2 --> D2b[Relatórios simples: estoque baixo]
     D2 --> D2c[Feedback: entrada registrada, saída registrada, estoque insuficiente]
     D2 --> D2d[Critérios: fluxo completo UI, estoque e histórico atualizados, validações ok]
+```
 
+```mermaid
 erDiagram
 
     MEDICAMENTO {
@@ -128,3 +130,5 @@ erDiagram
     PACIENTE ||--o{ SAIDA : "recebe"
     USUARIO ||--o{ ENTRADA : "realiza"
     USUARIO ||--o{ SAIDA : "autoriza"
+```
+
