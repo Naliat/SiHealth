@@ -85,7 +85,6 @@ header p {
     font-size: 14px;
 }
 
-
 .user-box {
     position: absolute;
     top: 30px;
@@ -104,7 +103,6 @@ header p {
     font-size: 18px;
 }
 
-
 .card {
     background: #fff;
     padding: 25px 30px;
@@ -113,48 +111,6 @@ header p {
     border: 1px solid #e3e6ea;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
 }
-
-.card h2 {
-    font-size: 20px;
-    margin-bottom: 20px;
-    font-weight: 600;
-}
-
-.form-row {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 18px;
-}
-
-.form-row.small {
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-}
-
-label {
-    font-weight: 600;
-    margin-bottom: 6px;
-    color: #3a4653;
-}
-
-input {
-    padding: 12px 14px;
-    border-radius: 8px;
-    border: 1px solid #cfd5db;
-    background: #fafbfc;
-    font-size: 14px;
-    transition: 0.2s;
-    width: 260px;
-}
-
-input:focus {
-    border-color: #4f6df5;
-    outline: none;
-    background: #fff;
-    box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.2);
-}
-
 
 .btn {
     margin-top: 30px;
@@ -176,65 +132,13 @@ input:focus {
     transform: translateY(-1px);
 }
 
+/* Utilitários comuns */
 .btn-compact {
     margin-top: 0;
     padding: 10px 14px;
 }
 
-.filter-input {
-    padding: 10px;
-    min-width: 280px;
-}
-
-.toolbar {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-}
-
-.toolbar-left {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.status {
-    margin-bottom: 10px;
-    color: #666;
-}
-
-.table-container {
-    overflow: auto;
-}
-
-/* Estilo da tabela de listagem */
-.shtable {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.shtable thead tr {
-    text-align: left;
-    border-bottom: 1px solid #eee;
-}
-
-.shtable th,
-.shtable td {
-    padding: 12px;
-}
-
-.shtable tbody tr {
-    border-bottom: 1px solid #f1f1f1;
-}
-
-#cardSemDados {
-    display: none;
-}
-
 @media (max-width: 768px) {
-
     body {
         flex-direction: column;
     }
@@ -242,68 +146,15 @@ input:focus {
     .sidebar {
         width: 100%;
         height: auto;
-        padding: 16px;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    .menu, .bottom-menu {
-        display: none;
-    }
-
-    .logo {
-        margin: 0;
-        font-size: 20px;
+        box-shadow: none;
     }
 
     .content {
         padding: 20px;
     }
 
-    header h1 {
-        font-size: 22px;
-    }
-
-    header p {
-        font-size: 13px;
-    }
-
     .user-box {
         position: static;
-        margin-top: 15px;
-        align-self: flex-end;
-        transform: scale(0.95);
-    }
-
-    .card {
-        padding: 18px;
-        margin-top: 20px;
-    }
-
-    .card h2 {
-        font-size: 18px;
-    }
-
-    input {
-        width: 100%;
-    }
-
-    .form-row.small {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .form-row.small span {
-        margin-top: -5px;
-        margin-left: 0;
-    }
-
-    .btn {
-        width: 100%;
-        text-align: center;
-        padding: 14px;
-        font-size: 16px;
+        margin-top: 10px;
     }
 }
