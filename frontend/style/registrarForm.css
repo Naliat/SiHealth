@@ -1,0 +1,42 @@
+/* Estilos específicos da página Registrar Entrada (formulário) */
+
+.card h2 {
+    font-size: 20px;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.form-row {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 18px;
+}
+
+.form-row.small {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+label {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #3a4653;
+}
+
+input {
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid #cfd5db;
+    background: #fafbfc;
+    font-size: 14px;
+    transition: 0.2s;
+    width: 260px;
+}
+
+input:focus {
+    border-color: #4f6df5;
+    outline: none;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.2);
+}

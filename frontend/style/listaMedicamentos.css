@@ -1,0 +1,52 @@
+/* Componentes específicos da página Lista de Medicamentos */
+
+.toolbar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.toolbar-left {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.filter-input {
+    padding: 10px;
+    min-width: 280px;
+}
+
+.status {
+    margin-bottom: 10px;
+    color: #666;
+}
+
+.table-container {
+    overflow: auto;
+}
+
+.shtable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.shtable thead tr {
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.shtable th,
+.shtable td {
+    padding: 12px;
+}
+
+.shtable tbody tr {
+    border-bottom: 1px solid #f1f1f1;
+}
+
+#cardSemDados {
+    display: none;
+}
