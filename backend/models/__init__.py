@@ -10,6 +10,7 @@ from .paciente import Paciente
 from .lote import Lote
 from .entrada import Entrada
 from .saida import Saida
+from .medicamento_completo import Medicamento_completo
 
 
 __all__ = [
@@ -18,6 +19,7 @@ __all__ = [
     "Paciente",
     "Lote",
     "Entrada",
-    "Saida"
+    "Saida",
+    "Medicamento_completo"
 
 ]

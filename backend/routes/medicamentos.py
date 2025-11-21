@@ -1,14 +1,44 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from typing import List
-from odmantic import ObjectId
+from odmantic import AIOEngine, ObjectId
 
 from models.medicamento import Medicamento
+from models.lote import Lote
+from models.medicamento_completo import Medicamento_completo
+
 from database import engine
+
+
 
 router = APIRouter(
     prefix="/medicamentos",
     tags=["Medicamentos"]
 )
+
+@router.get("/completo", response_model=list[Medicamento_completo])
+async def listar_com_info_completa():
+    remedios = await engine.find(Medicamento)
+    resposta = []
+
+    for r in remedios:
+        lote = await engine.find_one(Lote, Lote.id_medicamento == r.id)
+
+        resposta.append({
+            "id": str(r.id),
+            "nome": r.nome,
+            "principio_ativo": r.principio_ativo,
+            "dosagem": r.dosagem,
+            "fabricante": r.fabricante,
+
+            "numero_da_caixa": lote.numero_caixa if lote else None,
+            "lote": lote.numero_lote if lote else None,
+            "validade": lote.data_validade.date().isoformat() if lote else None,
+            "quantidade": lote.quantidade_atual if lote else None,
+            "quantidade_por_caixa": lote.quantidade_por_caixa if lote else None
+        })
+
+    return resposta
+
 
 # -------------------------------
 # Criar medicamento
@@ -70,3 +100,11 @@ async def deletar_medicamento(med_id: str):
 
     await engine.delete(medicamento)
     return {"detail": "Medicamento deletado com sucesso"}
+
+# -------------------------------
+# saida do medicamento completo
+# -------------------------------
+
+
+
+
