@@ -1,6 +1,7 @@
 from enum import Enum
 from odmantic import Model
 from datetime import datetime
+from typing import Optional 
 
 class Sexo(str, Enum):
     """Enum para representar o sexo do paciente"""
@@ -11,9 +12,7 @@ class Sexo(str, Enum):
 class Paciente(Model):
     nome: str
     CNS: str          # Cartão Nacional de Saúde (único)
-    cpf: str | None = None
-    data_nascimento: datetime | None = None
-    sexo: str | None = None
+    cpf: Optional[str] = None
+    data_nascimento: Optional[datetime] = None
+    sexo: Optional[Sexo] = None  # Usando o Enum 'Sexo'
     criado_em: datetime = datetime.now()
-
-    

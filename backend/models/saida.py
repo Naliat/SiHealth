@@ -1,3 +1,6 @@
+# models/saida.py
+
+from typing import Optional # Já deve estar lá
 from odmantic import Model, Field
 from datetime import datetime
 from bson import ObjectId
@@ -12,5 +15,4 @@ class Saida(Model):
     quantidade_total_entregue: int
     
     data_saida: datetime = Field(default_factory=datetime.now)
-    observacao: str | None = None
-
+    observacao: Optional[str] = None # <-- CORRIGIDO
