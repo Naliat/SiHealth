@@ -1,16 +1,24 @@
+# main.py
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from routes import main_router
+from app.core.config import settings
+from app.core.database import engine, Base
+# Import necessário para criar tabelas
+import app.models 
+from app.api.v1.router import api_router
 
-app = FastAPI(title="Meu Backend com FastAPI + MongoDB")
+# Cria as tabelas (caso ainda não existam)
+Base.metadata.create_all(bind=engine)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # em produção, restrinja
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+app = FastAPI(
+    title=settings.APP_TITLE,
+    version="1.0.0",
+    description="API de Gerenciamento de Estoque Farmacêutico - SiHealth",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
-#app.include_router(users.router)
-app.include_router(main_router)
+# Conecta o roteador principal da V1
+app.include_router(api_router, prefix=settings.API_V1_STR)
+
+@app.get("/", tags=["Status"])
+def health_check():
+    return {"status": "ok", "mensagem": "API SiHealth rodando!"}
