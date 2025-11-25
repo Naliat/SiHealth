@@ -72,7 +72,7 @@ class MedicamentoResponse(MedicamentoBase):
         if tem_vencido:
             return "Vencido"
         elif tem_alerta:
-            return "Próx. Venc."
+            return "Prox. Venc."
         elif tem_estoque_valido:
             return "OK"
         else:
