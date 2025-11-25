@@ -40,14 +40,25 @@ class LoteRepository:
     # precisaria fazer um refresh mais complexo, mas geralmente não precisa).
 
     def create(self, lote: LoteCreate):
-        # ... seu código de create ...
-        # DICA: O Lote recém-criado pode não ter o relacionamento carregado.
-        # Se der erro no retorno do POST, o jeito mais simples é:
-        db_lote = Lote(**dados_lote, quantidade_atual=lote.quantidade_inicial)
+        # 1. Converte o schema para dicionário
+        dados_lote = lote.model_dump()
+        
+        # 2. Cria o objeto do banco
+        # Definimos que a quantidade_atual começa igual à inicial
+        db_lote = Lote(
+            **dados_lote,
+            quantidade_atual=lote.quantidade_inicial 
+        )
+        
+        # 3. Salva no banco
         self.db.add(db_lote)
         self.db.commit()
-        self.db.refresh(db_lote)
-        return db_lote 
+        self.db.refresh(db_lote) # Pega o ID gerado
+
+        # 4. O PULO DO GATO:
+        # Retornamos buscando pelo ID. Isso garante que o relacionamento 
+        # 'medicamento' venha preenchido, evitando erro no Schema de Resposta.
+        return self.get_by_id(db_lote.id_lote)
 
     def update(self, db_lote: Lote, lote_update: LoteUpdate):
         update_data = lote_update.model_dump(exclude_unset=True)
