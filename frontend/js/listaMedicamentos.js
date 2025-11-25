@@ -1,102 +1,86 @@
-// Ajustar conforme o backend
-const API_BASE = '';
+const API_BASE = 'http://localhost:8000/api/v1';
 
-const tbody = document.getElementById('tbodyMedicamentos');
-const statusEl = document.getElementById('status');
-const inputFiltro = document.getElementById('filtro');
-const btnLimpar = document.getElementById('btnLimpar');
-const cardSemDados = document.getElementById('cardSemDados');
+let medicamentos = [];
 
-let dados = [];
-let filtrados = [];
+document.addEventListener("DOMContentLoaded", () => {
+    const tbody = document.getElementById("tbodyMedicamentos");
+    const filtro = document.getElementById("filtro");
+    const btnLimpar = document.getElementById("btnLimpar");
 
-function formatarData(iso) {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    if (!tbody || !filtro || !btnLimpar) {
+        console.error("Elementos da página não encontrados.");
+        return;
+    }
+
+    carregarMedicamentos();
+
+    filtro.addEventListener("input", () => {
+        const termo = filtro.value.toLowerCase();
+        const filtrados = medicamentos.filter(med => {
+            return Object.values(med).some(valor =>
+                String(valor).toLowerCase().includes(termo)
+            );
+        });
+        renderizarTabela(filtrados);
+    });
+
+    btnLimpar.addEventListener("click", () => {
+        filtro.value = "";
+        renderizarTabela(medicamentos);
+    });
+});
+
+async function carregarMedicamentos() {
+    try {
+        const response = await fetch(`${API_BASE}/medicamentos/`);
+        const data = await response.json();
+        medicamentos = data;
+
+        renderizarTabela(medicamentos);
+
+    } catch (error) {
+        console.error("Erro ao carregar medicamentos:", error);
+    }
 }
 
-function renderTabela(rows) {
-  tbody.innerHTML = '';
-  if (!rows || rows.length === 0) {
-    cardSemDados.style.display = 'block';
-    return;
-  }
-  cardSemDados.style.display = 'none';
-  const frag = document.createDocumentFragment();
-  rows.forEach(m => {
-    const tr = document.createElement('tr');
-    const c = (t) => { const td = document.createElement('td'); td.textContent = t ?? ''; return td; };
-    tr.append(
-      c(m.nome),
-      c(m.fabricante),
-      c(m.principio_ativo),
-      c(m.dosagem),
-      c(m.categoria),
-      c(formatarData(m.criado_em))
-    );
-    frag.appendChild(tr);
-  });
-  tbody.appendChild(frag);
+function renderizarTabela(lista) {
+    const tbody = document.getElementById("tbodyMedicamentos");
+    const cardSemDados = document.getElementById("cardSemDados");
+
+    tbody.innerHTML = "";
+
+    if (!lista.length) {
+        cardSemDados.style.display = "block";
+        return;
+    } else {
+        cardSemDados.style.display = "none";
+    }
+
+    lista.forEach(med => {
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+            <td>${med.id_medicamento}</td>
+            <td>${med.nome}</td>
+            <td>${med.fabricante}</td>
+            <td>${med.principio_ativo}</td>
+            <td>${med.dosagem}</td>
+            <td>${med.categoria}</td>
+            <td>${med.tarja}</td>
+            <td>
+                <span class="status-${med.status_geral.toLowerCase()}">
+                    ${med.status_geral}
+                </span>
+            </td>
+            <td>${med.descricao}</td>
+            <td>${formatarData(med.criado_em)}</td>
+        `;
+
+        tbody.appendChild(tr);
+    });
 }
 
-function aplicarFiltro() {
-  const q = (inputFiltro.value || '').toLowerCase().trim();
-  if (!q) {
-    filtrados = dados;
-  } else {
-    filtrados = dados.filter(m =>
-      (m.nome || '').toLowerCase().includes(q) ||
-      (m.principio_ativo || '').toLowerCase().includes(q) ||
-      (m.fabricante || '').toLowerCase().includes(q)
-    );
-  }
-  renderTabela(filtrados);
+function formatarData(dataISO) {
+    const data = new Date(dataISO);
+    return data.toLocaleDateString("pt-BR") + " " + data.toLocaleTimeString("pt-BR");
 }
-
-async function carregar() {
-  try {
-    const resp = await fetch(`${API_BASE}/medicamentos/`);
-    if (!resp.ok) throw new Error(`Erro ${resp.status}`);
-    dados = await resp.json();
-    statusEl.textContent = `${dados.length} medicamento(s) encontrados`;
-    filtrados = dados;
-    aplicarFiltro();
-  } catch (err) {
-      console.error(err);
-      dados = [
-          {
-              nome: 'Dipirona 500mg',
-              fabricante: 'Medley',
-              principio_ativo: 'Dipirona Monoidratada',
-              dosagem: '500mg',
-              categoria: 'Analgésico',
-              criado_em: '2024-02-20T10:00:00'
-          },
-          {
-              nome: 'Amoxicilina 500mg',
-              fabricante: 'EMS',
-              principio_ativo: 'Amoxicilina',
-              dosagem: '500mg',
-              categoria: 'Antibiótico',
-              criado_em: '2024-02-19T14:30:00'
-          },
-          {
-              nome: 'Omeprazol 20mg',
-              fabricante: 'Medley',
-              principio_ativo: 'Omeprazol',
-              dosagem: '20mg',
-              categoria: 'Antiácido',
-              criado_em: '2024-02-18T09:15:00'
-          }
-      ];
-      filtrados = dados;
-      aplicarFiltro();
-  }
-}
-
-inputFiltro.addEventListener('input', aplicarFiltro);
-btnLimpar.addEventListener('click', () => { inputFiltro.value = ''; aplicarFiltro(); });
-
-carregar();

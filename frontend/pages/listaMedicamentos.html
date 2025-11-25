@@ -38,11 +38,11 @@
     <div class="card">
         <div class="toolbar">
             <div class="toolbar-left">
-                <input id="filtro" class="filter-input" type="text" placeholder="Buscar por nome, princípio ativo ou fabricante">
+                <input id="filtro" class="filter-input" type="text" placeholder="Buscar por qualquer campo...">
                 <button id="btnLimpar" class="btn btn-compact">Limpar</button>
             </div>
             <div class="toolbar-left">
-                <a id="btnRegistrar" class="btn btn-compact" href="./registrarRemedio.html"> + Registrar entrada</a>
+                <a class="btn btn-compact" href="./registrarRemedio.html"> + Registrar entrada</a>
             </div>
         </div>
     </div>
@@ -51,25 +51,27 @@
         <div class="table-container">
             <table class="shtable">
                 <thead>
-                <tr>
-                    <th>Nome</th>
-                    <th>Fabricante</th>
-                    <th>Princípio Ativo</th>
-                    <th>Dosagem</th>
-                    <th>Categoria</th>
-                    <th>Criado em</th>
-                </tr>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Fabricante</th>
+                        <th>Princípio Ativo</th>
+                        <th>Dosagem</th>
+                        <th>Categoria</th>
+                        <th>Tarja</th>
+                        <th>Status</th>
+                        <th>Descrição</th>
+                        <th>Criado em</th>
+                    </tr>
                 </thead>
-                <tbody id="tbodyMedicamentos">
-                </tbody>
+                <tbody id="tbodyMedicamentos"></tbody>
             </table>
         </div>
     </div>
 
-    <div class="card" id="cardSemDados">
+    <div class="card" id="cardSemDados" style="display:none;">
         <p>Nenhum medicamento encontrado.</p>
     </div>
-    
 </div>
 
 <script src="../js/listaMedicamentos.js"></script>
