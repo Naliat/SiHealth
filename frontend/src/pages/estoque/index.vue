@@ -1,26 +1,69 @@
 <script lang="ts" setup>
-import { ref, watch } from 'vue'
-import { useDataTableServer } from '@/composables/useDataTableServer'
+import {reactive, ref, watch} from 'vue'
+import {useDataTableServer} from '@/composables/useDataTableServer'
 
-const search = ref('')
-const displaySort = ref('Alfabética')
+const state = reactive({
+  search: '',
+  displaySort: 'Alfabética' as 'Alfabética' | 'Data Vencimento' | 'Quantidade',
+  expanded: {} as Record<number, boolean>,
+})
 
-const { items, loading, totalItems, options } = useDataTableServer('/medicamentos')
+const {items, loading, totalItems, options} = useDataTableServer('/lotes')
+
+const localFallback = ref([
+  {
+    numero_lote: 'DEV-0001',
+    numero_caixa: '1',
+    quantidade_por_caixa: 12,
+    quantidade_inicial: 12,
+    data_fabricacao: '2025-11-28',
+    data_validade: '2099-12-31',
+    id_lote: 1,
+    id_medicamento: 1001,
+    quantidade_atual: 12,
+    criado_em: '2025-11-28T13:34:45.422Z',
+    status: 'OK',
+  },
+  {
+    numero_lote: 'DEV-0002',
+    numero_caixa: '0',
+    quantidade_por_caixa: 12,
+    quantidade_inicial: 24,
+    data_fabricacao: '2025-11-28',
+    data_validade: '2024-12-31',
+    id_lote: 2,
+    id_medicamento: 1002,
+    quantidade_atual: 0,
+    criado_em: '2025-11-28T13:34:45.422Z',
+    status: 'Próx. Venc.',
+  },
+])
 
 options.value = {
   ...options.value,
   itemsPerPage: 10,
-  sortBy: [{ key: 'nome', order: 'asc' }],
+  sortBy: [{key: 'data_validade', order: 'asc'}],
 }
+
+watch([loading, items], ([loadingVal, itemsVal]) => {
+  if (!loadingVal && Array.isArray(itemsVal) && itemsVal.length === 0) {
+    items.value = localFallback.value
+    totalItems.value = localFallback.value.length
+  }
+})
 
 let searchTimeout: ReturnType<typeof setTimeout>
 
-watch(search, (newVal) => {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    options.value = { ...options.value, search: newVal }
-  }, 500)
-})
+watch(
+  () => state.search,
+  (newVal) => {
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => {
+      options.value = {...options.value, search: newVal}
+    }, 500)
+  }
+)
+
 
 const getStatusClass = (status: string) => {
   switch (status) {
@@ -34,6 +77,13 @@ const getStatusClass = (status: string) => {
       return ''
   }
 }
+
+const toggleRow = (idLote: number) => {
+  state.expanded[idLote] = !state.expanded[idLote]
+}
+
+const isExpanded = (idLote: number) => state.expanded[idLote]
+
 </script>
 
 <template>
@@ -41,8 +91,8 @@ const getStatusClass = (status: string) => {
 
     <div class="d-flex justify-space-between align-start mb-8">
       <div>
-        <h1 class="text-h3 font-weight-bold text-slate-900 mb-2">Lista de Remédios</h1>
-        <p class="text-h6 text-slate-600">Visão geral da lista de remédios</p>
+        <h1 class="text-h3 font-weight-bold text-slate-900 mb-2">Lista do Estoque</h1>
+        <p class="text-h6 text-slate-600">Visão geral da lista do estoque</p>
       </div>
       <v-btn class="user-btn" variant="text">
         <v-icon start>mdi-account-circle</v-icon>
@@ -61,7 +111,7 @@ const getStatusClass = (status: string) => {
 
     <div class="d-flex justify-space-between align-center mb-6">
       <v-text-field
-        v-model="search"
+        v-model="state.search"
         class="search-field"
         density="comfortable"
         hide-details
@@ -76,18 +126,18 @@ const getStatusClass = (status: string) => {
         <v-menu offset-y>
           <template #activator="{ props }">
             <v-btn class="sort-btn" size="small" v-bind="props" variant="outlined">
-              {{ displaySort }}
+              {{ state.displaySort }}
               <v-icon end size="small">mdi-chevron-down</v-icon>
             </v-btn>
           </template>
           <v-list>
-            <v-list-item @click="displaySort = 'Alfabética'">
+            <v-list-item @click=" state.displaySort = 'Alfabética'">
               <v-list-item-title>Alfabética</v-list-item-title>
             </v-list-item>
-            <v-list-item @click="displaySort = 'Data Vencimento'">
+            <v-list-item @click=" state.displaySort = 'Data Vencimento'">
               <v-list-item-title>Data Vencimento</v-list-item-title>
             </v-list-item>
-            <v-list-item @click="displaySort = 'Quantidade'">
+            <v-list-item @click=" state.displaySort = 'Quantidade'">
               <v-list-item-title>Quantidade</v-list-item-title>
             </v-list-item>
           </v-list>
@@ -103,7 +153,7 @@ const getStatusClass = (status: string) => {
         :loading="loading"
         class="custom-table"
         hide-default-footer
-        no-data-text="Nenhum remédio encontrado."
+        no-data-text="Nenhum item de estoque encontrado."
       >
 
         <template #headers>
@@ -137,17 +187,18 @@ const getStatusClass = (status: string) => {
         </template>
 
         <template #item="{ item }">
+
           <tr class="table-row">
             <td class="text-center pa-5">
               <div class="number-badge">
-                {{ item.id_medicamento }}
+                {{ item.id_lote ?? item.id_medicamento ?? '-' }}
               </div>
             </td>
 
             <td class="text-left pa-5">
               <div class="d-flex align-center">
                 <div class="vertical-divider"></div>
-                <span class="medicine-name">{{ item.nome ?? '-' }}</span>
+                <span class="medicine-name">{{ item.numero_lote ?? '-' }}</span>
               </div>
             </td>
 
@@ -164,18 +215,61 @@ const getStatusClass = (status: string) => {
             </td>
 
             <td class="text-center pa-5">
-              <v-tooltip location="top" text="Ver detalhes do remédio">
-                <template #activator="{ props }">
-                  <v-btn
-                    class="action-btn"
-                    icon
-                    size="small"
-                    v-bind="props"
-                  >
-                    <v-icon size="20">mdi-chevron-down</v-icon>
+              <v-btn
+                class="action-btn"
+                icon
+                size="small"
+                @click="toggleRow(item.id_lote)"
+              >
+                <v-icon size="20">{{ isExpanded(item.id_lote) ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
+              </v-btn>
+            </td>
+          </tr>
+
+          <tr v-if="isExpanded(item.id_lote)">
+            <td class="pa-0" colspan="5">
+              <div class="expanded-card">
+                <div class="expanded-section">
+                  <h3 class="expanded-title">Informações Básicas:</h3>
+                  <div class="expanded-grid">
+                    <div class="expanded-item">
+                      <span class="label"><v-icon class="me-1" size="18">mdi-pound</v-icon> Código do Produto:</span>
+                      <span class="value">{{ item.id_medicamento ?? '-' }}</span>
+                    </div>
+                    <div class="expanded-item">
+                      <span class="label"><v-icon class="me-1" size="18">mdi-package-variant</v-icon> Caixas:</span>
+                      <span class="value">{{ item.numero_caixa ?? '-' }} Unidades </span>
+                    </div>
+                    <div class="expanded-item">
+                      <span class="label"><v-icon class="me-1" size="18">mdi-cube</v-icon> Unidades/caixa:</span>
+                      <span class="value">{{ item.quantidade_por_caixa ?? '-' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="expanded-section">
+                  <h3 class="expanded-title">Informações do Fabricante:</h3>
+                  <div class="expanded-grid">
+                    <div class="expanded-item">
+                      <span class="label"><v-icon class="me-1" size="18">mdi-pound</v-icon> Lote:</span>
+                      <span class="value">{{ item.numero_lote ?? '-' }}</span>
+                    </div>
+                    <div class="expanded-item">
+                      <span class="label"><v-icon class="me-1" size="18">mdi-calendar</v-icon> Validade:</span>
+                      <span class="value">{{ item.data_validade ?? '-' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="expanded-actions">
+                  <v-btn color="primary" icon variant="tonal">
+                    <v-icon>mdi-pencil</v-icon>
                   </v-btn>
-                </template>
-              </v-tooltip>
+                  <v-btn color="error" icon variant="tonal">
+                    <v-icon>mdi-delete</v-icon>
+                  </v-btn>
+                </div>
+              </div>
             </td>
           </tr>
         </template>
@@ -191,7 +285,7 @@ const getStatusClass = (status: string) => {
                   size="large"
                   variant="flat"
                 >
-                  Gerar relatório da lista de remédios
+                  Gerar relatório do estoque
                 </v-btn>
               </div>
             </td>
@@ -203,7 +297,6 @@ const getStatusClass = (status: string) => {
 </template>
 
 <style scoped>
-
 .bg-gradient {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   min-height: 100vh;
@@ -408,5 +501,51 @@ const getStatusClass = (status: string) => {
   background-color: #334155 !important;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
-</style>
 
+.expanded-card {
+  display: flex;
+  gap: 32px;
+  padding: 24px 32px;
+  background-color: #e5edf5;
+  border-left: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 0 0 24px 24px;
+}
+
+.expanded-section {
+  flex: 1;
+}
+
+.expanded-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+}
+
+.expanded-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 24px;
+}
+
+.expanded-item .label {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.expanded-item .value {
+  margin-left: 4px;
+  font-size: 0.85rem;
+}
+
+.expanded-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding-left: 24px;
+  border-left: 1px solid #cbd5e1;
+}
+</style>

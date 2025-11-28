@@ -14,13 +14,8 @@ const selectedItem = ref<string>('dashboard')
 
 const menuItems: SideBarItem[] = [
   {title: 'Dashboard', icon: 'mdi-view-dashboard', value: 'dashboard', route: {path: 'dashboard'}},
-  {title: 'Lista de Medicamentos', icon: 'mdi-format-list-bulleted', value: 'remedios', route: {path: 'medicamentos'}},
-  {
-    title: 'Registrar Entrada',
-    icon: 'mdi-file-document-plus-outline',
-    value: 'entrada',
-    route: {path: 'registrar-entrada'}
-  },
+  {title: 'Lista do Estoque', icon: 'mdi-format-list-bulleted', value: 'estoque', route: {path: 'estoque'}},
+  {title: 'Lista de Medicamentos', icon: 'mdi-format-list-bulleted', value: 'medicamentos', route: {path: 'medicamentos'}},
   {title: 'Registrar Saída', icon: 'mdi-file-document-minus-outline', value: 'saida', route: {path: 'registrar-saida'}},
 ]
 

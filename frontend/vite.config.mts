@@ -1,16 +1,16 @@
-import { fileURLToPath, URL } from 'node:url'
-import Vue from '@vitejs/plugin-vue'
 // Plugins
 import AutoImport from 'unplugin-auto-import/vite'
-import Fonts from 'unplugin-fonts/vite'
 import Components from 'unplugin-vue-components/vite'
-import { VueRouterAutoImports } from 'unplugin-vue-router'
+import Fonts from 'unplugin-fonts/vite'
+import Layouts from 'vite-plugin-vue-layouts-next'
+import Vue from '@vitejs/plugin-vue'
 import VueRouter from 'unplugin-vue-router/vite'
+import { VueRouterAutoImports } from 'unplugin-vue-router'
+import Vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
+
 // Utilities
 import { defineConfig } from 'vite'
-
-import Layouts from 'vite-plugin-vue-layouts-next'
-import Vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
+import { fileURLToPath, URL } from 'node:url'
 
 // https://vitejs.dev/config/
 export default defineConfig({
