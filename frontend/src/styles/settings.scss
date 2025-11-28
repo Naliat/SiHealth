@@ -1,0 +1,138 @@
+/**
+ * src/styles/settings.scss
+ *
+ * Configures SASS variables and Vuetify overwrites
+ */
+
+// https://vuetifyjs.com/features/sass-variables/`
+// @use 'vuetify/settings' with (
+//   $color-pack: false
+// );
+
+/**
+ * Design Tokens - Variáveis CSS globais
+ * Pode ser usado em qualquer componente via var(--token-name)
+ */
+:root {
+  /* Background gradients */
+  --bg-gradient-light: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+
+  /* Paleta Slate - cores de texto e backgrounds */
+  --slate-900: #0f172a;
+  --slate-600: #475569;
+  --slate-500: #64748b;
+  --slate-400: #94a3b8;
+  --slate-300: #cbd5e1;
+  --slate-200: #e2e8f0;
+  --slate-100: #f1f5f9;
+  --slate-50: #f8fafc;
+
+  /* Status colors */
+  --status-success: #059669;
+  --status-success-bg: #d1fae5;
+  --status-success-border: #a7f3d0;
+
+  --status-warning: #d97706;
+  --status-warning-bg: #fef3c7;
+  --status-warning-border: #fde68a;
+
+  --status-error: #dc2626;
+  --status-error-bg: #fee2e2;
+  --status-error-border: #fecaca;
+
+  /* Tamanhos e espaçamentos padronizados */
+  --badge-size: 44px;
+  --border-radius-sm: 8px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 16px;
+  --border-radius-xl: 24px;
+
+  /* Sombras */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+/**
+ * Utility Classes - Classes reutilizáveis
+ */
+.bg-gradient {
+  background: var(--bg-gradient-light);
+  min-height: 100vh;
+}
+
+.text-slate-900 {
+  color: var(--slate-900);
+}
+
+.text-slate-600 {
+  color: var(--slate-600);
+}
+
+.text-slate-500 {
+  color: var(--slate-500);
+}
+
+/**
+ * Component Overwrites - Customizações globais do Vuetify
+ */
+
+/* Custom active item indicator (sidebar) */
+.custom-active-item {
+  background-color: transparent !important;
+  opacity: 1;
+  position: relative;
+}
+
+.custom-active-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 24px;
+  width: 4px;
+  background-color: white;
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+/* Table overwrites globais */
+.page-container .v-data-table thead th {
+  background: transparent;
+  border-bottom: none;
+  color: var(--slate-500);
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 10px 12px;
+}
+
+.page-container .v-data-table thead th:first-child {
+  padding-left: 8px;
+}
+
+.table-header-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(0,0,0,0.6);
+}
+
+.page-container .v-data-table tbody tr td {
+  padding: 8px 12px;
+}
+
+/* Chevron button subtle hover */
+.chevron-btn:hover {
+  background: rgba(0,0,0,0.04);
+}
+
+/* Text field global overwrites - bordas arredondadas e backgrounds */
+.v-text-field--outlined .v-field {
+  border-radius: var(--border-radius-md);
+}
+
+.v-text-field--filled .v-field {
+  border-radius: var(--border-radius-md);
+}
+
+
