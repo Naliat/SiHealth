@@ -10,40 +10,31 @@ class LoteService:
         self.lote_repo = LoteRepository(db)
         self.medicamento_repo = MedicamentoRepository(db)
 
+    # --- ADICIONE ESTE MÉTODO ---
+    def listar_todos(self, skip: int = 0, limit: int = 100):
+        # Chama o get_all do repositório (que já tem o joinedload configurado)
+        return self.lote_repo.get_all(skip, limit)
+    # ----------------------------
+
     def criar_lote(self, dados: LoteCreate):
-        # Validação: O medicamento existe?
         medicamento = self.medicamento_repo.get_by_id(dados.id_medicamento)
         if not medicamento:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Medicamento com ID {dados.id_medicamento} não encontrado. Não é possível criar o lote."
-            )
-
-        # Validação: Data de validade não pode ser no passado
+            raise HTTPException(status_code=404, detail=f"Medicamento {dados.id_medicamento} não encontrado.")
+        
         if dados.data_validade < date.today():
-             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A data de validade não pode ser anterior à data de hoje."
-            )
+             raise HTTPException(status_code=400, detail="Data de validade inválida.")
 
         return self.lote_repo.create(dados)
 
     def obter_por_id(self, id_lote: int):
         lote = self.lote_repo.get_by_id(id_lote)
         if not lote:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Lote não encontrado."
-            )
+            raise HTTPException(status_code=404, detail="Lote não encontrado.")
         return lote
 
     def listar_por_medicamento(self, id_medicamento: int):
-        # Verifica se o medicamento existe antes de buscar os lotes
         if not self.medicamento_repo.get_by_id(id_medicamento):
-             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Medicamento não encontrado."
-            )
+             raise HTTPException(status_code=404, detail="Medicamento não encontrado.")
         return self.lote_repo.get_by_medicamento(id_medicamento)
     
     def atualizar_lote(self, id_lote: int, dados: LoteUpdate):

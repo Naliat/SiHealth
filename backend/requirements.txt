@@ -13,6 +13,7 @@ email-validator
 
 # Segurança e Criptografia
 passlib[bcrypt]
+bcrypt==3.2.0
 
 # Utilitários para Upload/Forms (Geralmente necessário para login futuro)
 python-multipart
