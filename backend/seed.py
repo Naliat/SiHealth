@@ -1,173 +1,190 @@
 import sys
 import os
-from datetime import date, timedelta
-from passlib.context import CryptContext 
+import random
+from datetime import date, timedelta, datetime
+from dotenv import load_dotenv
 
-# Adiciona o diretório atual ao path para encontrar o 'app'
+# 1. Carrega variáveis de ambiente (.env)
+load_dotenv()
+
+# Adiciona o diretório atual ao path
 sys.path.append(os.getcwd())
 
 # Importações do SQLAlchemy e Models
 from app.core.database import SessionLocal
-from app.models.usuario import Usuario
-from app.models.paciente import Paciente
 from app.models.medicamento import Medicamento
 from app.models.lote import Lote
+from app.models.saida import Saida
 
-# --- CONFIGURAÇÃO DE SEGURANÇA LOCAL ---
-# Define o contexto de criptografia usando bcrypt, igual ao sistema principal
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def get_hash_local(senha: str):
-    """Gera o hash da senha usando bcrypt."""
-    return pwd_context.hash(senha)
-
-# Inicia a sessão com o banco
 db = SessionLocal()
 
 def seed_data():
-    print("🌱 Iniciando o povoamento do banco de dados...")
+    print("🌱 Iniciando Seed Completo (Testar API Inteira)...")
 
-    # --- 1. USUÁRIOS ---
-    print("👤 Criando 10 Usuários...")
-    usuarios = [
-        {"nome": "Admin Principal", "email": "admin@sihealth.com", "senha": "admin", "ativo": True},
-        {"nome": "João Silva", "email": "joao@farmacia.com", "senha": "123", "ativo": True},
-        {"nome": "Maria Oliveira", "email": "maria@farmacia.com", "senha": "123", "ativo": True},
-        {"nome": "Carlos Souza", "email": "carlos@farmacia.com", "senha": "123", "ativo": True},
-        {"nome": "Ana Pereira", "email": "ana@farmacia.com", "senha": "123", "ativo": True},
-        {"nome": "Pedro Santos", "email": "pedro@farmacia.com", "senha": "123", "ativo": False},
-        {"nome": "Lucia Lima", "email": "lucia@farmacia.com", "senha": "123", "ativo": True},
-        {"nome": "Roberto Costa", "email": "roberto@farmacia.com", "senha": "123", "ativo": True},
-        {"nome": "Fernanda Alves", "email": "fernanda@farmacia.com", "senha": "123", "ativo": True},
-        {"nome": "Lucas Martins", "email": "lucas@farmacia.com", "senha": "123", "ativo": True},
+    # ==============================================================================
+    # 1. MEDICAMENTOS (BASE)
+    # Apenas identidade do remédio. Detalhes físicos vão no lote.
+    # ==============================================================================
+    print("💊 Criando Medicamentos Genéricos...")
+    
+    lista_base = [
+        {"nome": "Dipirona Monohidratada", "principio": "Dipirona", "tarja": "Sem Tarja"},
+        {"nome": "Amoxicilina", "principio": "Amoxicilina", "tarja": "Vermelha"},
+        {"nome": "Clonazepam", "principio": "Clonazepam", "tarja": "Preta"},
+        {"nome": "Losartana Potássica", "principio": "Losartana", "tarja": "Vermelha"},
+        {"nome": "Paracetamol", "principio": "Paracetamol", "tarja": "Sem Tarja"},
+        {"nome": "Omeprazol", "principio": "Omeprazol", "tarja": "Sem Tarja"},
+        {"nome": "Simvastatina", "principio": "Simvastatina", "tarja": "Vermelha"},
+        {"nome": "Ibuprofeno", "principio": "Ibuprofeno", "tarja": "Sem Tarja"},
+        {"nome": "Diazepam", "principio": "Diazepam", "tarja": "Preta"},
+        {"nome": "Metformina", "principio": "Metformina", "tarja": "Vermelha"},
+        {"nome": "Captopril", "principio": "Captopril", "tarja": "Vermelha"},
+        {"nome": "Atenolol", "principio": "Atenolol", "tarja": "Vermelha"},
     ]
 
-    for u in usuarios:
-        if not db.query(Usuario).filter(Usuario.email == u["email"]).first():
-            user = Usuario(
-                nome=u["nome"],
-                email=u["email"],
-                senha_hash=get_hash_local(u["senha"]), # Usa a função local de hash
-                ativo=u["ativo"]
-            )
-            db.add(user)
-    db.commit()
+    ids_meds = {} # Mapa { "Nome": ID_Banco }
 
-    # --- 2. PACIENTES ---
-    print("🏥 Criando 10 Pacientes...")
-    pacientes = [
-        {"nome": "Josefa da Silva", "cns": "111111111110001", "cpf": "111.111.111-11", "nasc": date(1950, 5, 20), "sexo": "F"},
-        {"nome": "Antonio Francisco", "cns": "222222222220002", "cpf": "222.222.222-22", "nasc": date(1965, 8, 10), "sexo": "M"},
-        {"nome": "Francisca Maria", "cns": "333333333330003", "cpf": "333.333.333-33", "nasc": date(1980, 1, 15), "sexo": "F"},
-        {"nome": "Manoel Gomes", "cns": "444444444440004", "cpf": "444.444.444-44", "nasc": date(1990, 12, 5), "sexo": "M"},
-        {"nome": "Adriana Melo", "cns": "555555555550005", "cpf": "555.555.555-55", "nasc": date(1995, 3, 25), "sexo": "F"},
-        {"nome": "Paulo Ricardo", "cns": "666666666660006", "cpf": "666.666.666-66", "nasc": date(2000, 7, 7), "sexo": "M"},
-        {"nome": "Juliana Paes", "cns": "777777777770007", "cpf": "777.777.777-77", "nasc": date(1985, 9, 30), "sexo": "F"},
-        {"nome": "Marcos Vinicius", "cns": "888888888880008", "cpf": "888.888.888-88", "nasc": date(1975, 4, 12), "sexo": "M"},
-        {"nome": "Beatriz Souza", "cns": "999999999990009", "cpf": "999.999.999-99", "nasc": date(2010, 2, 28), "sexo": "F"},
-        {"nome": "Gabriel Medina", "cns": "101010101010010", "cpf": "000.000.000-00", "nasc": date(1993, 11, 22), "sexo": "M"},
-    ]
-
-    for p in pacientes:
-        if not db.query(Paciente).filter(Paciente.cns == p["cns"]).first():
-            pac = Paciente(
-                nome=p["nome"], cns=p["cns"], cpf=p["cpf"], 
-                data_nascimento=p["nasc"], sexo=p["sexo"]
-            )
-            db.add(pac)
-    db.commit()
-
-    # --- 3. MEDICAMENTOS ---
-    print("💊 Criando 10 Medicamentos...")
-    medicamentos = [
-        {
-            "nome": "Dipirona Sódica", "fab": "Medley", "cat": "Analgésico", 
-            "tarja": "Sem Tarja", "dosagem": "500mg", "principio_ativo": "Dipirona"
-        },
-        {
-            "nome": "Amoxicilina", "fab": "EMS", "cat": "Antibiótico", 
-            "tarja": "Vermelha", "dosagem": "500mg", "principio_ativo": "Amoxicilina"
-        },
-        {
-            "nome": "Clonazepam", "fab": "Eurofarma", "cat": "Ansiolítico", 
-            "tarja": "Preta", "dosagem": "2mg", "principio_ativo": "Clonazepam"
-        },
-        {
-            "nome": "Losartana Potássica", "fab": "Neo Química", "cat": "Anti-hipertensivo", 
-            "tarja": "Vermelha", "dosagem": "50mg", "principio_ativo": "Losartana"
-        },
-        {
-            "nome": "Paracetamol", "fab": "Teuto", "cat": "Analgésico", 
-            "tarja": "Sem Tarja", "dosagem": "750mg", "principio_ativo": "Paracetamol"
-        },
-        {
-            "nome": "Omeprazol", "fab": "Medley", "cat": "Antiúlcera", 
-            "tarja": "Sem Tarja", "dosagem": "20mg", "principio_ativo": "Omeprazol"
-        },
-        {
-            "nome": "Simvastatina", "fab": "EMS", "cat": "Hipolipemiante", 
-            "tarja": "Vermelha", "dosagem": "20mg", "principio_ativo": "Simvastatina"
-        },
-        {
-            "nome": "Azitromicina", "fab": "Eurofarma", "cat": "Antibiótico", 
-            "tarja": "Vermelha", "dosagem": "500mg", "principio_ativo": "Azitromicina"
-        },
-        {
-            "nome": "Diazepam", "fab": "Roche", "cat": "Ansiolítico", 
-            "tarja": "Preta", "dosagem": "10mg", "principio_ativo": "Diazepam"
-        },
-        {
-            "nome": "Ibuprofeno", "fab": "Bayer", "cat": "Anti-inflamatório", 
-            "tarja": "Sem Tarja", "dosagem": "600mg", "principio_ativo": "Ibuprofeno"
-        },
-    ]
-
-    ids_meds = []
-    for m in medicamentos:
-        # Verifica se já existe
-        med_existente = db.query(Medicamento).filter(Medicamento.nome == m["nome"]).first()
-        
-        if not med_existente:
+    for m in lista_base:
+        med = db.query(Medicamento).filter(Medicamento.nome == m["nome"]).first()
+        if not med:
             med = Medicamento(
-                nome=m["nome"], 
-                fabricante=m["fab"], 
-                categoria=m["cat"], 
-                tarja=m["tarja"],
-                dosagem=m["dosagem"],       
-                principio_ativo=m["principio_ativo"], 
-                descricao=f"Medicamento {m['nome']} {m['dosagem']} ({m['principio_ativo']}) para tratamento padrão."
+                nome=m["nome"],
+                principio_ativo=m["principio"],
+                tarja=m["tarja"]
             )
             db.add(med)
             db.commit()
             db.refresh(med)
-            ids_meds.append(med.id_medicamento)
-        else:
-            ids_meds.append(med_existente.id_medicamento)
+        ids_meds[m["nome"]] = med.id_medicamento
 
-    # --- 4. LOTES (ESTOQUE) ---
-    print("📦 Criando 10 Lotes (Estoque)...")
+    # ==============================================================================
+    # 2. LOTES (ESTOQUE)
+    # Aqui definimos Fabricante, Dosagem, Validade e Cenários de Alerta
+    # ==============================================================================
+    print("📦 Criando Lotes (Cenários para Dashboard)...")
     hoje = date.today()
-    validades = [hoje + timedelta(days=365 * (i % 3 + 1)) for i in range(10)]
+    
+    # Lista para guardar lotes que podem ter saídas (não vencidos/zerados)
+    lotes_disponiveis = []
 
-    for i in range(10):
-        num_lote = f"LOTE2025-{i+1:03d}"
+    def criar_lote(nome_med, fab, dosagem, cat, qtd, dias_validade, prefixo_lote):
+        if nome_med not in ids_meds: return
+
+        # Gera número aleatório para simular caixa real
+        num_lote = f"{prefixo_lote}-{random.randint(1000,9999)}"
+        
         if not db.query(Lote).filter(Lote.numero_lote == num_lote).first():
-            # Só tenta criar Lote se tivermos medicamentos suficientes (evita index error)
-            if i < len(ids_meds):
-                lote = Lote(
-                    id_medicamento=ids_meds[i],
-                    numero_lote=num_lote,
-                    numero_caixa=f"CX-{i+100}",
-                    quantidade_inicial=100,
-                    quantidade_atual=100,
-                    quantidade_por_caixa=10,
-                    data_validade=validades[i],
-                    data_fabricacao=hoje - timedelta(days=60),
-                )
-                db.add(lote)
-    db.commit()
+            lote = Lote(
+                id_medicamento=ids_meds[nome_med],
+                numero_lote=num_lote,
+                numero_caixa=f"CX-{random.randint(10,99)}",
+                quantidade_inicial=qtd + 100,
+                quantidade_atual=qtd,
+                quantidade_por_caixa=20,
+                data_fabricacao=hoje - timedelta(days=150),
+                data_validade=hoje + timedelta(days=dias_validade),
+                
+                # Novos campos normalizados
+                fabricante=fab,
+                dosagem=dosagem,
+                categoria=cat,
+                descricao=f"Lote {num_lote} de {nome_med} {dosagem} ({fab})"
+            )
+            db.add(lote)
+            db.commit()
+            db.refresh(lote)
+            
+            # Se for um lote bom para venda, guarda na lista
+            if qtd > 0 and dias_validade > 0:
+                lotes_disponiveis.append(lote)
 
-    print("✅ Banco de dados populado com sucesso!")
+    # --- CENÁRIOS DE TESTE ---
+
+    # A. VENCIDOS (Dashboard Card Vermelho)
+    criar_lote("Clonazepam", "Roche", "2.5mg/ml", "Ansiolítico", 30, -20, "VENC") 
+    criar_lote("Amoxicilina", "Prati", "500mg", "Antibiótico", 50, -5, "VENC")
+
+    # B. PRÓXIMO VENCIMENTO (Dashboard Card Amarelo)
+    criar_lote("Simvastatina", "EMS", "20mg", "Hipolipemiante", 100, 15, "ALERT") 
+    criar_lote("Paracetamol", "Teuto", "750mg", "Analgésico", 150, 25, "ALERT")
+
+    # C. BAIXO ESTOQUE (Dashboard Tabela)
+    # Limite padrão é 20 unidades
+    criar_lote("Losartana Potássica", "Neo Química", "50mg", "Anti-hipertensivo", 5, 300, "BAIXO") 
+    criar_lote("Diazepam", "Eurofarma", "10mg", "Ansiolítico", 12, 400, "BAIXO")
+
+    # D. ESTOQUE SAUDÁVEL (Para gerar volume de saídas)
+    criar_lote("Dipirona Monohidratada", "Medley", "500mg", "Analgésico", 500, 700, "OK")
+    criar_lote("Dipirona Monohidratada", "EMS", "1g", "Analgésico", 300, 600, "OK") # Mesmo remédio, outro fabricante
+    
+    criar_lote("Ibuprofeno", "Bayer", "600mg", "Anti-inflamatório", 400, 500, "OK")
+    criar_lote("Metformina", "Prati", "850mg", "Antidiabético", 250, 365, "OK")
+    criar_lote("Omeprazol", "Medley", "20mg", "Antiúlcera", 300, 400, "OK")
+    criar_lote("Captopril", "Teuto", "25mg", "Anti-hipertensivo", 200, 500, "OK")
+    criar_lote("Atenolol", "Sandoz", "50mg", "Anti-hipertensivo", 150, 450, "OK")
+
+    # ==============================================================================
+    # 3. SAÍDAS / DISPENSAÇÕES (HISTÓRICO)
+    # Gera dados mês a mês para o Gráfico de Linha e Gráfico de Barras
+    # ==============================================================================
+    print("📉 Gerando Histórico de Dispensações (Jan - Hoje)...")
+    
+    mes_atual = hoje.month
+    ano_atual = hoje.year
+
+    # Helper para gerar CNS fictício
+    def gerar_cns_fake():
+        return f"7{random.randint(10000000000000, 99999999999999)}"
+
+    # Helper para nomes fictícios
+    nomes_pacientes = ["Maria Silva", "José Santos", "Ana Oliveira", "Pedro Souza", "Lucas Lima", "Carla Dias"]
+
+    # Loop pelos meses do ano
+    for mes in range(1, mes_atual + 1):
+        # Quantidade aleatória de atendimentos no mês
+        qtd_atendimentos = random.randint(15, 30)
+        
+        for _ in range(qtd_atendimentos):
+            if not lotes_disponiveis: break
+            
+            # Escolhe um lote aleatório dos disponíveis
+            lote_escolhido = random.choice(lotes_disponiveis)
+            nome_med = lote_escolhido.medicamento.nome
+
+            # Lógica para viciar o gráfico de "Mais Retirados":
+            # Faz Dipirona e Amoxicilina saírem muito mais que os outros
+            if nome_med == "Dipirona Monohidratada":
+                qtd_retirada = random.randint(4, 8)
+            elif nome_med == "Amoxicilina":
+                qtd_retirada = random.randint(2, 5)
+            else:
+                qtd_retirada = random.randint(1, 2)
+            
+            # Gera data aleatória dentro do mês correto
+            dia_max = 28 
+            data_simulada = datetime(ano_atual, mes, random.randint(1, dia_max), 10, 0, 0)
+
+            # Cria a saída sem usuário/paciente ID (apenas texto)
+            saida = Saida(
+                id_lote=lote_escolhido.id_lote,
+                # Dados do Paciente (String)
+                cns_paciente=gerar_cns_fake(),
+                nome_paciente=random.choice(nomes_pacientes),
+                numero_receita=f"REC-{random.randint(100,999)}/{ano_atual}",
+                
+                # Dados da Transação
+                quantidade=qtd_retirada,
+                tipo_saida="Receita Médica",
+                observacao="Seed Automático",
+                data_saida=data_simulada # Importante para o gráfico de linha
+            )
+            db.add(saida)
+    
+    db.commit()
+    print("✅ Banco Populado com Sucesso!")
+    print("   -> Teste o Dashboard: GET /api/v1/dashboard")
+    print("   -> Teste a Listagem: GET /api/v1/medicamentos")
+    print("   -> Teste uma Saída: POST /api/v1/saidas (Use um numero_lote criado)")
     db.close()
 
 if __name__ == "__main__":
