@@ -10,11 +10,23 @@ class LoteService:
         self.lote_repo = LoteRepository(db)
         self.medicamento_repo = MedicamentoRepository(db)
 
-    # --- ADICIONE ESTE MÉTODO ---
-    def listar_todos(self, skip: int = 0, limit: int = 100):
-        # Chama o get_all do repositório (que já tem o joinedload configurado)
-        return self.lote_repo.get_all(skip, limit)
-    # ----------------------------
+    def listar_todos(
+        self, 
+        skip: int = 0, 
+        limit: int = 100,
+        numero_lote: str = None,
+        nome_medicamento: str = None,
+        ordenar_por: str = None,
+        direcao: str = "asc"
+    ):
+        return self.lote_repo.get_all(
+            skip=skip, 
+            limit=limit,
+            numero_lote=numero_lote,
+            nome_medicamento=nome_medicamento,
+            ordenar_por=ordenar_por,
+            direcao=direcao
+        )
 
     def criar_lote(self, dados: LoteCreate):
         medicamento = self.medicamento_repo.get_by_id(dados.id_medicamento)
