@@ -1,42 +1,57 @@
+# app/services/saida_service.py
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+
 from app.db.repositories.saida import SaidaRepository
-from app.db.repositories.lote import LoteRepository
+from app.models.lote import Lote
+from app.models.saida import Saida
 from app.schemas.saida import SaidaCreate
 
 class SaidaService:
     def __init__(self, db: Session):
         self.db = db
         self.saida_repo = SaidaRepository(db)
-        self.lote_repo = LoteRepository(db)
 
     def registrar_saida(self, dados: SaidaCreate):
-        # 1. Busca Lote
-        lote = self.lote_repo.get_by_id(dados.id_lote)
+        # 1. BUSCAR LOTE PELO NÚMERO (STRING)
+        # O usuário digitou "L2024-ABC", nós buscamos o ID real no banco
+        lote = self.db.query(Lote).filter(Lote.numero_lote == dados.numero_lote).first()
+        
         if not lote:
-            raise HTTPException(status_code=404, detail="Lote não encontrado")
-
-        # 2. Calcula Total (Caixas * Unidades)
-        quantidade_total = dados.numero_de_caixas * dados.quantidade_por_caixa
-
-        # 3. Valida Estoque
-        if lote.quantidade_atual < quantidade_total:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, 
-                detail=f"Estoque insuficiente. Disponível: {lote.quantidade_atual} unidades"
+                status_code=404, 
+                detail=f"Lote '{dados.numero_lote}' não encontrado no sistema."
             )
 
-        try:
-            # 4. Baixa no Estoque
-            lote.quantidade_atual -= quantidade_total
+        # 2. VERIFICAR ESTOQUE
+        if lote.quantidade_atual < dados.quantidade:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Estoque insuficiente. O lote {lote.numero_lote} tem apenas {lote.quantidade_atual} unidades."
+            )
 
-            # 5. Salva Registro
-            nova_saida = self.saida_repo.create(dados, quantidade_total)
+        # 3. EFETUAR A BAIXA E SALVAR
+        try:
+            # Desconta do estoque
+            lote.quantidade_atual -= dados.quantidade
             
+            # Cria o registro de saída
+            nova_saida = Saida(
+                id_lote=lote.id_lote,
+                cns_paciente=dados.cns_paciente,
+                nome_paciente=dados.nome_paciente,
+                quantidade=dados.quantidade,
+                numero_receita=dados.numero_receita,
+                tipo_saida=dados.tipo_saida,
+                observacao=dados.observacao
+            )
+            
+            self.saida_repo.create(nova_saida)
             self.db.commit()
             self.db.refresh(nova_saida)
+            
             return nova_saida
 
         except Exception as e:
-            self.db.rollback()
-            raise HTTPException(status_code=500, detail=str(e))
+            self.db.rollback() # Desfaz a baixa de estoque se der erro ao salvar a saída
+            raise e
