@@ -21,24 +21,10 @@ watch(search, (newVal) => {
     options.value = { ...options.value, search: newVal }
   }, 500)
 })
-
-const getStatusClass = (status: string) => {
-  switch (status) {
-    case 'OK':
-      return 'status-ok'
-    case 'Próx. Venc.':
-      return 'status-warning'
-    case 'Vencido':
-      return 'status-expired'
-    default:
-      return ''
-  }
-}
 </script>
 
 <template>
   <v-container class="page-container pa-8 bg-gradient" fluid>
-
     <div class="d-flex justify-space-between align-start mb-8">
       <div>
         <h1 class="text-h3 font-weight-bold text-slate-900 mb-2">Lista de Remédios</h1>
@@ -114,23 +100,10 @@ const getStatusClass = (status: string) => {
                 <span class="header-text">Número</span>
               </div>
             </th>
-            <th class="text-left pa-4" style="width: 50%; max-width: 50%;">
+            <th class="text-left pa-4" style="width: 90%; max-width: 90%;">
               <div class="d-flex align-center ga-2">
                 <span class="header-icon">Tt</span>
                 <span class="header-text">Nome do remédio</span>
-              </div>
-            </th>
-            <th class="pa-4" style="width: 2%; max-width: 2%"></th>
-            <th class="text-center pa-4" style="width: 19%; max-width: 19%;">
-              <div class="d-flex align-center justify-center ga-2">
-                <span class="header-icon"><v-icon>mdi-check-circle-outline</v-icon></span>
-                <span class="header-text">Status</span>
-              </div>
-            </th>
-            <th class="text-center pa-4" style="width: 19%; max-width: 19%;">
-              <div class="d-flex align-center justify-center ga-2">
-                <span class="header-icon">⋮⋮</span>
-                <span class="header-text">Ações</span>
               </div>
             </th>
           </tr>
@@ -150,39 +123,12 @@ const getStatusClass = (status: string) => {
                 <span class="medicine-name">{{ item.nome ?? '-' }}</span>
               </div>
             </td>
-
-            <td class="pa-5"></td>
-
-            <td class="text-center pa-5">
-              <v-chip
-                :class="getStatusClass(item.status ?? '')"
-                class="status-chip"
-                size="small"
-              >
-                {{ item.status ?? '—' }}
-              </v-chip>
-            </td>
-
-            <td class="text-center pa-5">
-              <v-tooltip location="top" text="Ver detalhes do remédio">
-                <template #activator="{ props }">
-                  <v-btn
-                    class="action-btn"
-                    icon
-                    size="small"
-                    v-bind="props"
-                  >
-                    <v-icon size="20">mdi-chevron-down</v-icon>
-                  </v-btn>
-                </template>
-              </v-tooltip>
-            </td>
           </tr>
         </template>
 
         <template #body.append>
           <tr>
-            <td class="table-footer pa-6" colspan="5">
+            <td class="table-footer pa-6" colspan="2">
               <div class="d-flex justify-end">
                 <v-btn
                   class="report-btn"
@@ -191,7 +137,7 @@ const getStatusClass = (status: string) => {
                   size="large"
                   variant="flat"
                 >
-                  Gerar relatório da lista de remédios
+                  + Cadastrar nova entrada 
                 </v-btn>
               </div>
             </td>
@@ -203,6 +149,7 @@ const getStatusClass = (status: string) => {
 </template>
 
 <style scoped>
+/* Mantive todo o CSS original, só removi estilos de status e actions que não são mais usados */
 
 .bg-gradient {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
@@ -348,48 +295,6 @@ const getStatusClass = (status: string) => {
   color: #0f172a;
 }
 
-.status-chip {
-  font-weight: 500 !important;
-  text-transform: none !important;
-  letter-spacing: 0 !important;
-  border-radius: 16px !important;
-  padding: 0 16px !important;
-  height: 28px !important;
-  border: 1px solid !important;
-}
-
-.status-ok {
-  background-color: #d1fae5 !important;
-  color: #059669 !important;
-  border-color: #a7f3d0 !important;
-}
-
-.status-warning {
-  background-color: #fef3c7 !important;
-  color: #d97706 !important;
-  border-color: #fde68a !important;
-}
-
-.status-expired {
-  background-color: #fee2e2 !important;
-  color: #dc2626 !important;
-  border-color: #fecaca !important;
-}
-
-.action-btn {
-  background-color: #475569 !important;
-  color: white !important;
-  border-radius: 50% !important;
-  width: 40px !important;
-  height: 40px !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.action-btn:hover {
-  background-color: #334155 !important;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-}
-
 .table-footer {
   background-color: #f8fafc !important;
   border-top: 1px solid #e2e8f0 !important;
@@ -409,4 +314,3 @@ const getStatusClass = (status: string) => {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 </style>
-

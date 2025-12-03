@@ -15,13 +15,15 @@ const selectedItem = ref<string>('dashboard')
 const menuItems: SideBarItem[] = [
   {title: 'Dashboard', icon: 'mdi-view-dashboard', value: 'dashboard', route: {path: 'dashboard'}},
   {title: 'Lista do Estoque', icon: 'mdi-format-list-bulleted', value: 'estoque', route: {path: 'estoque'}},
-  {title: 'Lista de Medicamentos', icon: 'mdi-format-list-bulleted', value: 'medicamentos', route: {path: 'medicamentos'}},
-  {title: 'Registrar Saída', icon: 'mdi-file-document-minus-outline', value: 'saida', route: {path: 'registrar-saida'}},
+  {title: 'Lista de Medicamentos', icon: 'mdi-clipboard-list', value: 'medicamentos', route: {path: 'medicamentos'}},
+  {title: 'Registrar Lote', icon: 'mdi-plus-box-multiple-outline', value: 'novo-lote', route: {path: 'registrarLote'}},
+  {title: 'Registrar Saída', icon: 'mdi-exit-to-app', value: 'saida', route: {path: 'registrar-saida'}},
+   {title: 'Registrar Remédio', icon: 'mdi-pill', value: 'novo-remedio', route: { path: 'registrarRemedio' }},
 ]
 
-const bottomItems: Partial<SideBarItem>[] = [
-  {title: 'Configurações', icon: 'mdi-cog', value: 'config'},
-  {title: 'Sair', icon: 'mdi-logout', value: 'sair'},
+const bottomItems: SideBarItem[] = [
+  {title: 'Configurações', icon: 'mdi-cog', value: 'config', route: {path: 'configuracao'}}, 
+  {title: 'Sair', icon: 'mdi-logout', value: 'sair', route: {path: 'login'}}, 
 ]
 </script>
 
@@ -51,6 +53,7 @@ const bottomItems: Partial<SideBarItem>[] = [
           :key="i"
           :prepend-icon="item.icon"
           :title="item.title"
+          :to="item.route"
           :value="item.value"
           class="pl-6"
         />
