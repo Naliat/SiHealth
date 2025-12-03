@@ -8,7 +8,7 @@ from app.schemas.usuario import UsuarioCreate, UsuarioResponse
 from app.schemas.paciente import PacienteCreate, PacienteResponse
 
 router = APIRouter()
-
+"""
 # --- Rotas de Usuário ---
 @router.post("/usuarios", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED)
 def criar_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
@@ -19,7 +19,7 @@ def criar_usuario(usuario: UsuarioCreate, db: Session = Depends(get_db)):
 def listar_usuarios(db: Session = Depends(get_db)):
     service = UsuarioService(db)
     return service.listar_usuarios()
-
+"""
 # --- Rotas de Paciente ---
 @router.post("/pacientes", response_model=PacienteResponse, status_code=status.HTTP_201_CREATED)
 def criar_paciente(paciente: PacienteCreate, db: Session = Depends(get_db)):

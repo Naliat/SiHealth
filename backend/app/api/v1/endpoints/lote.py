@@ -5,6 +5,9 @@ from typing import List
 from app.core.database import get_db
 from app.services import LoteService
 from app.schemas.lote import LoteCreate, LoteResponse, LoteUpdate
+from app import schemas # Assumindo sua estrutura atual
+from app.core.dependecies import  verificar_senha_mestra
+
 
 router = APIRouter()
 
@@ -20,9 +23,14 @@ def listar_todos_lotes(
 # ----------------------------------------
 
 @router.post("/", response_model=LoteResponse, status_code=status.HTTP_201_CREATED)
-def criar_lote(lote: LoteCreate, db: Session = Depends(get_db)):
-    service = LoteService(db)
-    return service.criar_lote(lote)
+def criar_novo_lote(
+    lote: LoteCreate,  # Corrigido: removido o prefixo 'schemas.'
+    db: Session = Depends(get_db),
+    autorizado: bool = Depends(verificar_senha_mestra) # Proteção OK
+):
+    service = LoteService(db) # Corrigido: Instanciando o service
+    return service.criar_lote(lote) # Corrigido: Usando o método do service
+
 
 @router.get("/{id_lote}", response_model=LoteResponse)
 def obter_lote(id_lote: int, db: Session = Depends(get_db)):
