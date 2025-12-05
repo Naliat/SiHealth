@@ -1,17 +1,22 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
-import { useDataTableServer } from '@/composables/useDataTableServer'
 
 const search = ref('')
 const displaySort = ref('Alfabética')
 
-const { items, loading, totalItems, options } = useDataTableServer('/medicamentos')
 
-options.value = {
-  ...options.value,
-  itemsPerPage: 10,
-  sortBy: [{ key: 'nome', order: 'asc' }],
-}
+const items = ref([
+    { id_medicamento: 1, nome: 'Paracetamol', principio_ativo: 'Acetaminofeno', tarja: 'Vermelha' },
+    { id_medicamento: 2, nome: 'Amoxicilina', principio_ativo: 'Amoxicilina tri-hidratada', tarja: 'Amarela' },
+    { id_medicamento: 3, nome: 'Dorflex', principio_ativo: 'Dipirona, Orfenadrina', tarja: 'Livre' },
+]);
+const loading = ref(false);
+const totalItems = ref(3);
+const options = ref({
+    itemsPerPage: 10,
+    sortBy: [{ key: 'nome', order: 'asc' }],
+});
+
 
 let searchTimeout: ReturnType<typeof setTimeout>
 
@@ -21,10 +26,141 @@ watch(search, (newVal) => {
     options.value = { ...options.value, search: newVal }
   }, 500)
 })
+
+const showRegisterDialog = ref(false)
+const isSubmitting = ref(false)
+const showSnackbar = ref(false) 
+
+const nomeRemedio = ref('')
+const principioAtivo = ref('')
+const tarja = ref('Livre')
+const tarjasOpcoes = ['Livre', 'Amarela', 'Vermelha', 'Preta']
+
+const cadastrarRemedio = () => {
+  isSubmitting.value = true
+  
+  console.log('Novo Remédio Registrado:', {
+    nomeRemedio: nomeRemedio.value,
+    principioAtivo: principioAtivo.value,
+    tarja: tarja.value,
+  })
+
+  setTimeout(() => {
+    isSubmitting.value = false
+    showRegisterDialog.value = false
+    
+  
+    nomeRemedio.value = ''
+    principioAtivo.value = ''
+    tarja.value = 'Livre'
+    
+    
+    showSnackbar.value = true
+  }, 1500)
+}
+
+const cancelarCadastro = () => {
+    showRegisterDialog.value = false;
+    nomeRemedio.value = ''
+    principioAtivo.value = ''
+    tarja.value = 'Livre'
+}
 </script>
 
 <template>
   <v-container class="page-container pa-8 bg-gradient" fluid>
+    
+    <v-snackbar
+        v-model="showSnackbar"
+        color="success"
+        timeout="3000"
+        location="top right"
+    >
+      Remédio cadastrado com sucesso!
+      <template #actions>
+        <v-btn
+          color="white"
+          variant="text"
+          @click="showSnackbar = false"
+        >
+          Fechar
+        </v-btn>
+      </template>
+    </v-snackbar>
+
+    <v-dialog v-model="showRegisterDialog" max-width="500px" transition="slide-y-transition">
+        <v-card class="modal-card" rounded="xl" elevation="10">
+            <v-card-title class="text-h5 font-weight-bold text-center pa-6">
+                Registrar Remédio
+            </v-card-title>
+            <p class="text-center text-subtitle-1 text-slate-600 mb-4">Registro de novo remédio</p>
+            
+            <v-card-text class="pa-6">
+                <v-card class="pa-6 form-box" rounded="lg" elevation="1">
+                    <v-card-title class="text-center text-h6 font-weight-bold pa-0 mb-4">
+                        Dados do Remédio:
+                    </v-card-title>
+                    
+                    <v-text-field
+                        v-model="nomeRemedio"
+                        label="Nome do remédio:"
+                        prepend-inner-icon="mdi-pill"
+                        variant="outlined"
+                        density="comfortable"
+                        rounded="lg"
+                    />
+
+                    <v-text-field
+                        v-model="principioAtivo"
+                        label="Princípio Ativo:"
+                        prepend-inner-icon="mdi-flask"
+                        variant="outlined"
+                        density="comfortable"
+                        rounded="lg"
+                    />
+                    
+                    <v-select
+                        v-model="tarja"
+                        :items="tarjasOpcoes"
+                        label="Tarja:"
+                        prepend-inner-icon="mdi-lock"
+                        variant="outlined"
+                        density="comfortable"
+                        rounded="lg"
+                        hide-details
+                    />
+                </v-card>
+            </v-card-text>
+            
+            <v-card-actions class="pa-6 d-flex justify-space-between">
+                <v-btn
+                    class="modal-btn-cancel"
+                    color="#c25353"
+                    variant="flat"
+                    size="large"
+                    rounded="lg"
+                    @click="cancelarCadastro"
+                    :disabled="isSubmitting"
+                >
+                    Cancelar
+                </v-btn>
+                <v-btn
+                    class="modal-btn-confirm"
+                    color="#3b5b76"
+                    variant="flat"
+                    size="large"
+                    rounded="lg"
+                    @click="cadastrarRemedio"
+                    :loading="isSubmitting"
+                    :disabled="isSubmitting"
+                >
+                    Concluir
+                </v-btn>
+            </v-card-actions>
+        </v-card>
+    </v-dialog>
+
+
     <div class="d-flex justify-space-between align-start mb-8">
       <div>
         <h1 class="text-h3 font-weight-bold text-slate-900 mb-2">Lista de Remédios</h1>
@@ -136,8 +272,9 @@ watch(search, (newVal) => {
                   rounded="lg"
                   size="large"
                   variant="flat"
+                  @click="showRegisterDialog = true"
                 >
-                  + Cadastrar nova entrada 
+                  + Registrar novo remédio 
                 </v-btn>
               </div>
             </td>
@@ -149,7 +286,43 @@ watch(search, (newVal) => {
 </template>
 
 <style scoped>
-/* Mantive todo o CSS original, só removi estilos de status e actions que não são mais usados */
+
+
+.modal-card {
+    background-color: #e9eff3; 
+    border: 3px solid #cbd5e1;
+    overflow: hidden;
+}
+
+.form-box {
+    background-color: white;
+    border: 1px solid #e2e8f0;
+}
+
+.modal-btn-cancel {
+    color: white !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+
+.modal-btn-confirm {
+    color: white !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+
+@media (max-width: 550px) {
+    .modal-card {
+        margin: 16px !important;
+    }
+    .v-card-actions {
+        flex-direction: column;
+    }
+    .modal-btn-cancel, .modal-btn-confirm {
+        width: 100%;
+        margin-top: 8px;
+    }
+}
 
 .bg-gradient {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);

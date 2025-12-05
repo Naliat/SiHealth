@@ -285,7 +285,7 @@ const isExpanded = (idLote: number) => state.expanded[idLote]
                   size="large"
                   variant="flat"
                 >
-                  Gerar relatório do estoque
+                  + Cadastrar nova entrada
                 </v-btn>
               </div>
             </td>

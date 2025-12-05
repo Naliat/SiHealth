@@ -325,8 +325,7 @@ const onMedicamentoSearch = (search: string) => {
         </div>
       </v-card>
 
-      <!-- Informações do Remédio -->
-      <v-card class="section-card mb-6" elevation="1" rounded="xl">
+       <v-card class="section-card mb-6" elevation="1" rounded="xl">
         <div class="section-body">
           <h2 class="section-title">Informações do Remédio:</h2>
 
@@ -420,7 +419,6 @@ const onMedicamentoSearch = (search: string) => {
             </v-col>
           </v-row>
 
-          <!-- Linha: Quantidade por caixa + Total -->
           <v-row dense>
             <v-col cols="12" md="6">
               <label class="input-label">Quantidade por caixa:</label>
@@ -460,7 +458,6 @@ const onMedicamentoSearch = (search: string) => {
         </div>
       </v-card>
 
-      <!-- Finalização -->
       <v-card class="section-card mb-6" elevation="1" rounded="xl">
         <div class="section-body">
           <h2 class="section-title">Finalização:</h2>

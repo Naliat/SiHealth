@@ -5,13 +5,13 @@ const email = ref('usuario@dominio.com');
 const senha = ref('');
 const tamanhoFonte = ref('Média');
 const showPassword = ref(false); 
-
- const fontSizes = ['Pequena', 'Média', 'Grande'];
-
- const isLoading = ref(false);
-
+const fontSizes = ['Pequena', 'Média', 'Grande'];
+const isLoading = ref(false);
+const showMessage = ref(false); 
 const concluir = () => {
     isLoading.value = true;
+    showMessage.value = false;
+    
     console.log('Dados de Configuração Enviados:', {
         nomeUsuario: nomeUsuario.value,
         email: email.value,
@@ -21,13 +21,30 @@ const concluir = () => {
     
      setTimeout(() => {
         isLoading.value = false;
-        alert('Configurações salvas com sucesso!');
+        showMessage.value = true;
+        
+        // Esconde a mensagem após 3 segundos
+        setTimeout(() => {
+            showMessage.value = false;
+        }, 3000);
     }, 1500);
 };
 </script>
 
 <template>
-    <v-container fluid class="pa-6">
+    <v-container fluid class="config-container">
+        
+        <v-alert
+            v-if="showMessage"
+            type="success"
+            color="success"
+            variant="tonal"
+            border="start"
+            title="Sucesso!"
+            text="Configurações salvas com sucesso!"
+            class="mb-4"
+        />
+
         <h1 class="text-h4 mb-2">Configurações</h1>
         <p class="text-subtitle-1 mb-6 text-medium-emphasis">Configurações gerais do sistema</p>
 
@@ -55,7 +72,6 @@ const concluir = () => {
                         density="compact"
                         :disabled="isLoading"
                         hide-details
-                        class="d-inline-flex"
                     />
                 </v-col>
             </v-row>
@@ -108,7 +124,28 @@ const concluir = () => {
 </template>
 
 <style scoped>
- .v-container {
+ .config-container {
     background-color: #e9eff3; 
+    min-height: 100vh; 
+    max-width: 100vw;
+}
+
+@media (max-width: 600px) {
+    .config-container {
+        padding: 8px !important;
+        padding-top: 16px !important; 
+    }
+
+    .v-card {
+        padding: 12px !important; 
+    }
+    
+    .text-h4 {
+        font-size: 1.75rem !important;
+    }
+}
+
+.v-col {
+    padding-bottom: 0;
 }
 </style>
