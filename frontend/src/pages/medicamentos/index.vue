@@ -1,10 +1,24 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
 
+// --- DEFINIÇÃO DO TIPO CORRIGIDO PARA RESOLVER TS2353 ---
+// Esta interface resolve o erro de que 'search' não existe em 'options'
+interface DataTableOptions {
+    itemsPerPage: number;
+    sortBy: { key: string; order: string; }[];
+    search?: string; // Adiciona a propriedade 'search' opcional
+    page: number; // Propriedade comum em options
+    [key: string]: any; // Permite outras propriedades (fallback)
+}
+// Fim da definição de tipo
+
+// Assumindo que esta composição usa fetch para buscar dados
+// import { useDataTableServer } from '@/composables/useDataTableServer'
+
 const search = ref('')
 const displaySort = ref('Alfabética')
 
-
+// --- Simulação de useDataTableServer ---
 const items = ref([
     { id_medicamento: 1, nome: 'Paracetamol', principio_ativo: 'Acetaminofeno', tarja: 'Vermelha' },
     { id_medicamento: 2, nome: 'Amoxicilina', principio_ativo: 'Amoxicilina tri-hidratada', tarja: 'Amarela' },
@@ -12,25 +26,32 @@ const items = ref([
 ]);
 const loading = ref(false);
 const totalItems = ref(3);
-const options = ref({
+
+// CORRIGIDO: O ref de options agora usa a interface DataTableOptions
+const options = ref<DataTableOptions>({
     itemsPerPage: 10,
     sortBy: [{ key: 'nome', order: 'asc' }],
+    page: 1, // Adicionado para melhor simulação
+    search: '', // Inicializa com a propriedade 'search'
 });
-
+// Fim da simulação
 
 let searchTimeout: ReturnType<typeof setTimeout>
 
 watch(search, (newVal) => {
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
-    options.value = { ...options.value, search: newVal }
+    // AGORA ESTÁ CORRETO: o TypeScript reconhece 'search' no options.value
+    options.value = { ...options.value, search: newVal, page: 1 }
   }, 500)
 })
 
+// --- LÓGICA DO POP-UP DE REGISTRO ---
 const showRegisterDialog = ref(false)
 const isSubmitting = ref(false)
-const showSnackbar = ref(false) 
+const showSnackbar = ref(false) // NOVO: Estado para exibir a notificação de sucesso
 
+// Campos do Formulário do Pop-up
 const nomeRemedio = ref('')
 const principioAtivo = ref('')
 const tarja = ref('Livre')
@@ -39,6 +60,7 @@ const tarjasOpcoes = ['Livre', 'Amarela', 'Vermelha', 'Preta']
 const cadastrarRemedio = () => {
   isSubmitting.value = true
   
+  // Lógica real de submissão (API ou Firestore) viria aqui
   console.log('Novo Remédio Registrado:', {
     nomeRemedio: nomeRemedio.value,
     principioAtivo: principioAtivo.value,
@@ -49,18 +71,19 @@ const cadastrarRemedio = () => {
     isSubmitting.value = false
     showRegisterDialog.value = false
     
-  
+    // Limpar o formulário após sucesso
     nomeRemedio.value = ''
     principioAtivo.value = ''
     tarja.value = 'Livre'
     
-    
+    // Feedback de sucesso
     showSnackbar.value = true
   }, 1500)
 }
 
 const cancelarCadastro = () => {
     showRegisterDialog.value = false;
+    // Opcional: Limpar os campos ao cancelar
     nomeRemedio.value = ''
     principioAtivo.value = ''
     tarja.value = 'Livre'
@@ -70,6 +93,7 @@ const cancelarCadastro = () => {
 <template>
   <v-container class="page-container pa-8 bg-gradient" fluid>
     
+    <!-- Snackbar de Sucesso -->
     <v-snackbar
         v-model="showSnackbar"
         color="success"
@@ -88,6 +112,7 @@ const cancelarCadastro = () => {
       </template>
     </v-snackbar>
 
+    <!-- POP-UP / MODAL DE REGISTRO DE REMÉDIO -->
     <v-dialog v-model="showRegisterDialog" max-width="500px" transition="slide-y-transition">
         <v-card class="modal-card" rounded="xl" elevation="10">
             <v-card-title class="text-h5 font-weight-bold text-center pa-6">
@@ -95,6 +120,7 @@ const cancelarCadastro = () => {
             </v-card-title>
             <p class="text-center text-subtitle-1 text-slate-600 mb-4">Registro de novo remédio</p>
             
+            <!-- Conteúdo do Formulário -->
             <v-card-text class="pa-6">
                 <v-card class="pa-6 form-box" rounded="lg" elevation="1">
                     <v-card-title class="text-center text-h6 font-weight-bold pa-0 mb-4">
@@ -132,6 +158,7 @@ const cancelarCadastro = () => {
                 </v-card>
             </v-card-text>
             
+            <!-- Ações do Pop-up -->
             <v-card-actions class="pa-6 d-flex justify-space-between">
                 <v-btn
                     class="modal-btn-cancel"
@@ -159,6 +186,7 @@ const cancelarCadastro = () => {
             </v-card-actions>
         </v-card>
     </v-dialog>
+    <!-- FIM DO POP-UP -->
 
 
     <div class="d-flex justify-space-between align-start mb-8">
@@ -287,9 +315,10 @@ const cancelarCadastro = () => {
 
 <style scoped>
 
+/* --- ESTILOS DO MODAL --- */
 
 .modal-card {
-    background-color: #e9eff3; 
+    background-color: #e9eff3; /* Fundo do pop-up para dar destaque */
     border: 3px solid #cbd5e1;
     overflow: hidden;
 }
@@ -311,6 +340,7 @@ const cancelarCadastro = () => {
     letter-spacing: normal !important;
 }
 
+/* 📱 AJUSTES DE RESPONSIVIDADE DO MODAL */
 @media (max-width: 550px) {
     .modal-card {
         margin: 16px !important;
@@ -323,6 +353,9 @@ const cancelarCadastro = () => {
         margin-top: 8px;
     }
 }
+
+
+/* --- ESTILOS EXISTENTES DA LISTA --- */
 
 .bg-gradient {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
