@@ -16,9 +16,9 @@ const menuItems: SideBarItem[] = [
   {title: 'Dashboard', icon: 'mdi-view-dashboard', value: 'dashboard', route: {path: 'dashboard'}},
   {title: 'Lista do Estoque', icon: 'mdi-format-list-bulleted', value: 'estoque', route: {path: 'estoque'}},
   {title: 'Lista de Medicamentos', icon: 'mdi-clipboard-list', value: 'medicamentos', route: {path: 'medicamentos'}},
-  {title: 'Registrar Lote', icon: 'mdi-plus-box-multiple-outline', value: 'novo-lote', route: {path: 'registrarLote'}},
+  // {title: 'Registrar Lote', icon: 'mdi-plus-box-multiple-outline', value: 'novo-lote', route: {path: 'registrarLote'}},
   {title: 'Registrar Saída', icon: 'mdi-exit-to-app', value: 'saida', route: {path: 'registrar-saida'}},
-   {title: 'Registrar Remédio', icon: 'mdi-pill', value: 'novo-remedio', route: { path: 'registrarRemedio' }},
+  // {title: 'Registrar Remédio', icon: 'mdi-pill', value: 'novo-remedio', route: { path: 'registrarRemedio' }},
 ]
 
 const bottomItems: SideBarItem[] = [
