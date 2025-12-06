@@ -1,24 +1,15 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue'
-
-// --- DEFINIÇÃO DO TIPO CORRIGIDO PARA RESOLVER TS2353 ---
-// Esta interface resolve o erro de que 'search' não existe em 'options'
 interface DataTableOptions {
     itemsPerPage: number;
     sortBy: { key: string; order: string; }[];
-    search?: string; // Adiciona a propriedade 'search' opcional
-    page: number; // Propriedade comum em options
-    [key: string]: any; // Permite outras propriedades (fallback)
+    search?: string; 
+    page: number;
+    [key: string]: any;
 }
-// Fim da definição de tipo
-
-// Assumindo que esta composição usa fetch para buscar dados
-// import { useDataTableServer } from '@/composables/useDataTableServer'
-
 const search = ref('')
 const displaySort = ref('Alfabética')
 
-// --- Simulação de useDataTableServer ---
 const items = ref([
     { id_medicamento: 1, nome: 'Paracetamol', principio_ativo: 'Acetaminofeno', tarja: 'Vermelha' },
     { id_medicamento: 2, nome: 'Amoxicilina', principio_ativo: 'Amoxicilina tri-hidratada', tarja: 'Amarela' },
@@ -26,81 +17,107 @@ const items = ref([
 ]);
 const loading = ref(false);
 const totalItems = ref(3);
-
-// CORRIGIDO: O ref de options agora usa a interface DataTableOptions
 const options = ref<DataTableOptions>({
     itemsPerPage: 10,
     sortBy: [{ key: 'nome', order: 'asc' }],
-    page: 1, // Adicionado para melhor simulação
-    search: '', // Inicializa com a propriedade 'search'
+    page: 1,
+    search: '', 
 });
-// Fim da simulação
+
 
 let searchTimeout: ReturnType<typeof setTimeout>
 
 watch(search, (newVal) => {
   clearTimeout(searchTimeout)
   searchTimeout = setTimeout(() => {
-    // AGORA ESTÁ CORRETO: o TypeScript reconhece 'search' no options.value
+    
     options.value = { ...options.value, search: newVal, page: 1 }
   }, 500)
 })
 
-// --- LÓGICA DO POP-UP DE REGISTRO ---
-const showRegisterDialog = ref(false)
-const isSubmitting = ref(false)
-const showSnackbar = ref(false) // NOVO: Estado para exibir a notificação de sucesso
 
-// Campos do Formulário do Pop-up
+const showRegisterDialog = ref(false)
+const showConfirmPasswordDialog = ref(false) 
+const isSubmitting = ref(false)
+const showSnackbar = ref(false)
+const snackbarMessage = ref('Remédio cadastrado com sucesso!')
+const snackbarColor = ref('success')
 const nomeRemedio = ref('')
 const principioAtivo = ref('')
 const tarja = ref('Livre')
 const tarjasOpcoes = ['Livre', 'Amarela', 'Vermelha', 'Preta']
+const masterPassword = ref('')
+const masterPasswordError = ref(false)
+const SIMULATED_MASTER_PASSWORD = '123' 
 
-const cadastrarRemedio = () => {
-  isSubmitting.value = true
-  
-  // Lógica real de submissão (API ou Firestore) viria aqui
-  console.log('Novo Remédio Registrado:', {
-    nomeRemedio: nomeRemedio.value,
-    principioAtivo: principioAtivo.value,
-    tarja: tarja.value,
-  })
-
-  setTimeout(() => {
-    isSubmitting.value = false
-    showRegisterDialog.value = false
-    
-    // Limpar o formulário após sucesso
+const resetForm = () => {
     nomeRemedio.value = ''
     principioAtivo.value = ''
     tarja.value = 'Livre'
+    masterPassword.value = ''
+    masterPasswordError.value = false
+}
+
+const handleConcluirRegistro = () => {
+    showConfirmPasswordDialog.value = true;
+}
+
+const confirmarESalvar = () => {
+    masterPasswordError.value = false;
     
-    // Feedback de sucesso
-    showSnackbar.value = true
-  }, 1500)
+    if (masterPassword.value !== SIMULATED_MASTER_PASSWORD) {
+        masterPasswordError.value = true;
+        snackbarColor.value = 'error';
+        snackbarMessage.value = 'Senha-mestre incorreta. Tente novamente.';
+        showSnackbar.value = true;
+        return;
+    }
+
+    isSubmitting.value = true
+    showConfirmPasswordDialog.value = false 
+    showRegisterDialog.value = false 
+    
+    
+    console.log('Novo Remédio Registrado APÓS CONFIRMAÇÃO:', {
+        nomeRemedio: nomeRemedio.value,
+        principioAtivo: principioAtivo.value,
+        tarja: tarja.value,
+    })
+
+    setTimeout(() => {
+        isSubmitting.value = false
+        
+       
+        snackbarColor.value = 'success';
+        snackbarMessage.value = 'Remédio cadastrado com sucesso!';
+        showSnackbar.value = true
+        resetForm() 
+    }, 1500)
 }
 
 const cancelarCadastro = () => {
     showRegisterDialog.value = false;
-    // Opcional: Limpar os campos ao cancelar
-    nomeRemedio.value = ''
-    principioAtivo.value = ''
-    tarja.value = 'Livre'
+    resetForm();
+}
+
+const cancelarConfirmacao = () => {
+    showConfirmPasswordDialog.value = false;
+    masterPassword.value = '';
+    masterPasswordError.value = false;
 }
 </script>
 
 <template>
   <v-container class="page-container pa-8 bg-gradient" fluid>
     
-    <!-- Snackbar de Sucesso -->
+   
     <v-snackbar
         v-model="showSnackbar"
-        color="success"
+        :color="snackbarColor"
         timeout="3000"
         location="top right"
     >
-      Remédio cadastrado com sucesso!
+      {{ snackbarMessage }}
       <template #actions>
         <v-btn
           color="white"
@@ -111,8 +128,59 @@ const cancelarCadastro = () => {
         </v-btn>
       </template>
     </v-snackbar>
-
-    <!-- POP-UP / MODAL DE REGISTRO DE REMÉDIO -->
+    <v-dialog 
+        v-model="showConfirmPasswordDialog" 
+        max-width="400px" 
+        transition="slide-y-transition"
+        persistent
+    >
+        <v-card class="modal-card pa-6" rounded="xl" elevation="10">
+            <v-card-title class="text-h4 font-weight-bold text-center pa-0 mb-4">
+                Confirmação
+            </v-card-title>
+            <p class="text-h6 text-slate-600 text-center mb-6">Confirme colocando a senha-mestre</p>
+            
+            <v-card-text>
+                <v-text-field
+                    v-model="masterPassword"
+                    label="Senha-mestre"
+                    prepend-inner-icon="mdi-lock"
+                    :type="'password'"
+                    variant="outlined"
+                    density="comfortable"
+                    rounded="lg"
+                    :error="masterPasswordError"
+                    :error-messages="masterPasswordError ? 'Senha incorreta.' : ''"
+                    @keydown.enter="confirmarESalvar"
+                />
+            </v-card-text>
+            
+            <v-card-actions class="pa-0 d-flex justify-space-between">
+                <v-btn
+                    class="modal-btn-cancel"
+                    color="#c25353"
+                    variant="flat"
+                    size="large"
+                    rounded="lg"
+                    @click="cancelarConfirmacao"
+                >
+                    Cancelar
+                </v-btn>
+                <v-btn
+                    class="modal-btn-confirm"
+                    color="#3b5b76"
+                    variant="flat"
+                    size="large"
+                    rounded="lg"
+                    @click="confirmarESalvar"
+                    :loading="isSubmitting"
+                    :disabled="isSubmitting"
+                >
+                    Concluir
+                </v-btn>
+            </v-card-actions>
+        </v-card>
+    </v-dialog>
     <v-dialog v-model="showRegisterDialog" max-width="500px" transition="slide-y-transition">
         <v-card class="modal-card" rounded="xl" elevation="10">
             <v-card-title class="text-h5 font-weight-bold text-center pa-6">
@@ -120,7 +188,7 @@ const cancelarCadastro = () => {
             </v-card-title>
             <p class="text-center text-subtitle-1 text-slate-600 mb-4">Registro de novo remédio</p>
             
-            <!-- Conteúdo do Formulário -->
+           
             <v-card-text class="pa-6">
                 <v-card class="pa-6 form-box" rounded="lg" elevation="1">
                     <v-card-title class="text-center text-h6 font-weight-bold pa-0 mb-4">
@@ -158,7 +226,6 @@ const cancelarCadastro = () => {
                 </v-card>
             </v-card-text>
             
-            <!-- Ações do Pop-up -->
             <v-card-actions class="pa-6 d-flex justify-space-between">
                 <v-btn
                     class="modal-btn-cancel"
@@ -177,7 +244,7 @@ const cancelarCadastro = () => {
                     variant="flat"
                     size="large"
                     rounded="lg"
-                    @click="cadastrarRemedio"
+                    @click="handleConcluirRegistro"
                     :loading="isSubmitting"
                     :disabled="isSubmitting"
                 >
@@ -186,7 +253,6 @@ const cancelarCadastro = () => {
             </v-card-actions>
         </v-card>
     </v-dialog>
-    <!-- FIM DO POP-UP -->
 
 
     <div class="d-flex justify-space-between align-start mb-8">
@@ -315,10 +381,9 @@ const cancelarCadastro = () => {
 
 <style scoped>
 
-/* --- ESTILOS DO MODAL --- */
 
 .modal-card {
-    background-color: #e9eff3; /* Fundo do pop-up para dar destaque */
+    background-color: #e9eff3;
     border: 3px solid #cbd5e1;
     overflow: hidden;
 }
@@ -340,7 +405,6 @@ const cancelarCadastro = () => {
     letter-spacing: normal !important;
 }
 
-/* 📱 AJUSTES DE RESPONSIVIDADE DO MODAL */
 @media (max-width: 550px) {
     .modal-card {
         margin: 16px !important;
@@ -353,10 +417,6 @@ const cancelarCadastro = () => {
         margin-top: 8px;
     }
 }
-
-
-/* --- ESTILOS EXISTENTES DA LISTA --- */
-
 .bg-gradient {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   min-height: 100vh;
