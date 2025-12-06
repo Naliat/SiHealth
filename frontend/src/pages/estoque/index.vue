@@ -1,21 +1,15 @@
 <script lang="ts" setup>
 import {reactive, ref, watch} from 'vue'
-// Assumindo que useDataTableServer existe e funciona
-// import {useDataTableServer} from '@/composables/useDataTableServer'
-
 const state = reactive({
   search: '',
   displaySort: 'Alfabética' as 'Alfabética' | 'Data Vencimento' | 'Quantidade',
   expanded: {} as Record<number, boolean>,
 })
 
-// --- Simulação de useDataTableServer ---
-// Usando as variáveis de simulação e fallback fornecidas
 const items = ref([] as any[]);
 const loading = ref(false);
 const totalItems = ref(0);
 
-// Esta estrutura de options precisa ser explicitada para o TypeScript
 interface DataTableOptions {
     itemsPerPage: number;
     sortBy: { key: string; order: string; }[];
@@ -30,7 +24,6 @@ const options = ref<DataTableOptions>({
     page: 1,
     search: '',
 });
-// Fim da simulação
 
 const localFallback = ref([
   {
@@ -67,8 +60,6 @@ options.value = {
   sortBy: [{key: 'data_validade', order: 'asc'}],
 }
 
-// O erro de conexão (ERR_CONNECTION_REFUSED) está a ser tratado aqui.
-// Quando a chamada real falha (loadingVal=false e itemsVal.length=0), o fallback é aplicado.
 watch([loading, items], ([loadingVal, itemsVal]) => {
   if (!loadingVal && Array.isArray(itemsVal) && itemsVal.length === 0) {
     items.value = localFallback.value
@@ -105,20 +96,17 @@ const getStatusClass = (status: string) => {
 const toggleRow = (idLote: number) => {
   state.expanded[idLote] = !state.expanded[idLote]
 }
-
 const isExpanded = (idLote: number) => state.expanded[idLote]
-
-
-// --- LÓGICA DO POP-UP DE NOVA ENTRADA ---
-const showEntryDialog = ref(false) // Controla a visibilidade do modal
-const isEntrySubmitting = ref(false) // Controla o estado de envio
-const showSnackbar = ref(false) // Notificação de sucesso
-
-// Campos do Formulário de Registro de Entrada
+const showEntryDialog = ref(false) 
+const showConfirmPasswordDialog = ref(false) 
+const isEntrySubmitting = ref(false)
+const showSnackbar = ref(false) 
+const snackbarMessage = ref('Nova entrada cadastrada com sucesso!')
+const snackbarColor = ref('success')
 const loteNumero = ref('')
 const loteFabricante = ref('')
 const loteRegistroMS = ref('')
-const loteValidade = ref(new Date().toISOString().substring(0, 10)) // Data padrão
+const loteValidade = ref(new Date().toISOString().substring(0, 10))
 const loteCaixas = ref(1)
 const loteQuantidadeUnidades = ref(1)
 const remedioNome = ref('')
@@ -126,25 +114,11 @@ const remedioPrincipioAtivo = ref('')
 const remedioDosagem = ref('')
 const remedioTarja = ref('Livre')
 const tarjasOpcoes = ['Livre', 'Amarela', 'Vermelha', 'Preta']
+const masterPassword = ref('')
+const masterPasswordError = ref(false)
+const SIMULATED_MASTER_PASSWORD = '123' 
 
-const cadastrarNovaEntrada = () => {
-  isEntrySubmitting.value = true
-  
-  // Aqui viria a lógica de validação e chamada à API ou Firestore
-  console.log('Nova Entrada Registrada:', {
-    loteNumero: loteNumero.value,
-    loteValidade: loteValidade.value,
-    loteCaixas: loteCaixas.value,
-    loteTotalUnidades: loteCaixas.value * loteQuantidadeUnidades.value,
-    remedioNome: remedioNome.value,
-    remedioDosagem: remedioDosagem.value,
-  })
-
-  setTimeout(() => {
-    isEntrySubmitting.value = false
-    showEntryDialog.value = false
-    
-    // Resetar campos
+const resetForm = () => {
     loteNumero.value = ''
     loteFabricante.value = ''
     loteRegistroMS.value = ''
@@ -155,30 +129,76 @@ const cadastrarNovaEntrada = () => {
     remedioPrincipioAtivo.value = ''
     remedioDosagem.value = ''
     remedioTarja.value = 'Livre'
+    masterPassword.value = ''
+    masterPasswordError.value = false
+}
+
+
+const handleConcluirEntrada = () => {
+    showConfirmPasswordDialog.value = true;
+}
+
+
+const confirmarESalvarEntrada = () => {
+    masterPasswordError.value = false;
+
     
-    showSnackbar.value = true
-    // Em um app real, você recarregaria os dados aqui
-  }, 1500)
+    if (masterPassword.value !== SIMULATED_MASTER_PASSWORD) {
+        masterPasswordError.value = true;
+        snackbarColor.value = 'error';
+        snackbarMessage.value = 'Senha-mestre incorreta. Tente novamente.';
+        showSnackbar.value = true;
+        return;
+    }
+
+     
+    isEntrySubmitting.value = true
+    showConfirmPasswordDialog.value = false 
+    showEntryDialog.value = false  
+
+     
+    console.log('Nova Entrada Registrada APÓS CONFIRMAÇÃO:', {
+        loteNumero: loteNumero.value,
+        loteValidade: loteValidade.value,
+        loteCaixas: loteCaixas.value,
+        loteTotalUnidades: loteCaixas.value * loteQuantidadeUnidades.value,
+        remedioNome: remedioNome.value,
+    })
+
+    setTimeout(() => {
+        isEntrySubmitting.value = false
+        
+        
+        snackbarColor.value = 'success';
+        snackbarMessage.value = 'Nova entrada cadastrada com sucesso!';
+        showSnackbar.value = true
+        resetForm() 
+        
+    }, 1500)
 }
 
 const cancelarEntrada = () => {
     showEntryDialog.value = false;
-    // Sem resetar os campos aqui, caso o usuário queira reabrir
+    resetForm();
 }
 
+const cancelarConfirmacao = () => {
+    showConfirmPasswordDialog.value = false;
+    masterPassword.value = '';
+    masterPasswordError.value = false;
+}
 </script>
 
 <template>
   <v-container class="page-container pa-8 bg-gradient" fluid>
 
-    <!-- Snackbar de Sucesso -->
     <v-snackbar
         v-model="showSnackbar"
-        color="success"
+        :color="snackbarColor"
         timeout="3000"
         location="top right"
     >
-      Nova entrada cadastrada com sucesso!
+      {{ snackbarMessage }}
       <template #actions>
         <v-btn
           color="white"
@@ -189,8 +209,63 @@ const cancelarEntrada = () => {
         </v-btn>
       </template>
     </v-snackbar>
+
+    <!-- 2. POP-UP DE CONFIRMAÇÃO DA SENHA-MESTRE (Abre ao clicar em Concluir no 1º modal) -->
+    <v-dialog 
+        v-model="showConfirmPasswordDialog" 
+        max-width="400px" 
+        transition="slide-y-transition"
+        persistent
+    >
+        <v-card class="modal-card pa-6" rounded="xl" elevation="10">
+            <v-card-title class="text-h4 font-weight-bold text-center pa-0 mb-4">
+                Confirmação
+            </v-card-title>
+            <p class="text-h6 text-slate-600 text-center mb-6">Confirme colocando a senha-mestre</p>
+            
+            <v-card-text>
+                <v-text-field
+                    v-model="masterPassword"
+                    label="Senha-mestre"
+                    prepend-inner-icon="mdi-lock"
+                    :type="'password'"
+                    variant="outlined"
+                    density="comfortable"
+                    rounded="lg"
+                    :error="masterPasswordError"
+                    :error-messages="masterPasswordError ? 'Senha incorreta.' : ''"
+                    @keydown.enter="confirmarESalvarEntrada"
+                />
+            </v-card-text>
+            
+            <v-card-actions class="pa-0 d-flex justify-space-between">
+                <v-btn
+                    class="modal-btn-cancel"
+                    color="#c25353"
+                    variant="flat"
+                    size="large"
+                    rounded="lg"
+                    @click="cancelarConfirmacao"
+                >
+                    Cancelar
+                </v-btn>
+                <v-btn
+                    class="modal-btn-confirm"
+                    color="#3b5b76"
+                    variant="flat"
+                    size="large"
+                    rounded="lg"
+                    @click="confirmarESalvarEntrada"
+                    :loading="isEntrySubmitting"
+                    :disabled="isEntrySubmitting"
+                >
+                    Concluir
+                </v-btn>
+            </v-card-actions>
+        </v-card>
+    </v-dialog>
+    <!-- FIM DO POP-UP DE CONFIRMAÇÃO -->
     
-    <!-- POP-UP / MODAL DE REGISTRO DE NOVA ENTRADA -->
     <v-dialog v-model="showEntryDialog" max-width="800px" transition="slide-y-transition">
         <v-card class="modal-card" rounded="xl" elevation="10">
             <v-card-title class="text-h5 font-weight-bold text-center pa-6">
@@ -198,10 +273,8 @@ const cancelarEntrada = () => {
             </v-card-title>
             <p class="text-center text-subtitle-1 text-slate-600 mb-4">Registro de entrada no estoque</p>
             
-            <!-- Conteúdo do Formulário -->
+         
             <v-card-text class="pa-6">
-                
-                <!-- Informações do Lote -->
                 <v-card class="pa-6 form-box mb-6" rounded="lg" elevation="1">
                     <v-card-title class="text-h6 font-weight-bold pa-0 mb-4">
                         Informações do Lote:
@@ -277,7 +350,6 @@ const cancelarEntrada = () => {
                     </v-row>
                 </v-card>
                 
-                <!-- Dados do Remédio -->
                 <v-card class="pa-6 form-box" rounded="lg" elevation="1">
                     <v-card-title class="text-h6 font-weight-bold pa-0 mb-4">
                         Dados do Remédio:
@@ -351,7 +423,7 @@ const cancelarEntrada = () => {
                     variant="flat"
                     size="large"
                     rounded="lg"
-                    @click="cadastrarNovaEntrada"
+                    @click="handleConcluirEntrada"
                     :loading="isEntrySubmitting"
                     :disabled="isEntrySubmitting"
                 >
@@ -552,7 +624,6 @@ const cancelarEntrada = () => {
           <tr>
             <td class="table-footer pa-6" colspan="5">
               <div class="d-flex justify-end">
-                <!-- CORRIGIDO: O COMENTÁRIO HTML FOI REMOVIDO DA LINHA DE ATRIBUTOS -->
                 <v-btn
                   class="report-btn"
                   color="primary"
@@ -573,6 +644,47 @@ const cancelarEntrada = () => {
 </template>
 
 <style scoped>
+
+
+.modal-card {
+    background-color: #e9eff3; 
+    border: 3px solid #cbd5e1;
+    overflow: hidden;
+}
+
+.form-box {
+    background-color: white;
+    border: 1px solid #e2e8f0;
+}
+
+.modal-btn-cancel {
+    color: white !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+
+.modal-btn-confirm {
+    color: white !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+}
+
+/* 📱 AJUSTES DE RESPONSIVIDADE DO MODAL */
+@media (max-width: 550px) {
+    .modal-card {
+        margin: 16px !important;
+    }
+    .v-card-actions {
+        flex-direction: column;
+    }
+    .modal-btn-cancel, .modal-btn-confirm {
+        width: 100%;
+        margin-top: 8px;
+    }
+}
+
+
+/* --- ESTILOS EXISTENTES DA LISTA --- */
 .bg-gradient {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   min-height: 100vh;
