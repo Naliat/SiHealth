@@ -1,54 +1,66 @@
 <script lang="ts" setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+
+const API_BASE_URL = 'http://127.0.0.1:8000/api/v1/medicamentos';
+const API_TIMEOUT = 5000;
+const SYSTEM_SECRET_PASSWORD = import.meta.env.VITE_MASTER_PASSWORD || ''; 
+
+interface Medicamento {
+    id_medicamento: number;
+    nome: string;
+    principio_ativo: string;
+    tarja: string;
+}
+
 interface DataTableOptions {
     itemsPerPage: number;
     sortBy: { key: string; order: string; }[];
     search?: string; 
-    page: number;
-    [key: string]: any;
+    page: number; 
+    [key: string]: any; 
 }
+
 const search = ref('')
 const displaySort = ref('Alfabética')
 
-const items = ref([
-    { id_medicamento: 1, nome: 'Paracetamol', principio_ativo: 'Acetaminofeno', tarja: 'Vermelha' },
-    { id_medicamento: 2, nome: 'Amoxicilina', principio_ativo: 'Amoxicilina tri-hidratada', tarja: 'Amarela' },
-    { id_medicamento: 3, nome: 'Dorflex', principio_ativo: 'Dipirona, Orfenadrina', tarja: 'Livre' },
-]);
+const items = ref<Medicamento[]>([]);
 const loading = ref(false);
-const totalItems = ref(3);
+const totalItems = ref(0);
+
+const MAX_ITEMS_PER_PAGE = 500; 
+const itemsPerPageOptions = [
+    { value: 10, title: '10' },
+    { value: 50, title: '50' },
+    { value: 100, title: '100' },
+    { value: MAX_ITEMS_PER_PAGE, title: 'Todos' }
+];
+
+
 const options = ref<DataTableOptions>({
-    itemsPerPage: 10,
+    itemsPerPage: MAX_ITEMS_PER_PAGE, 
     sortBy: [{ key: 'nome', order: 'asc' }],
     page: 1,
     search: '', 
 });
 
-
-let searchTimeout: ReturnType<typeof setTimeout>
-
-watch(search, (newVal) => {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    
-    options.value = { ...options.value, search: newVal, page: 1 }
-  }, 500)
-})
-
-
 const showRegisterDialog = ref(false)
 const showConfirmPasswordDialog = ref(false) 
 const isSubmitting = ref(false)
 const showSnackbar = ref(false)
-const snackbarMessage = ref('Remédio cadastrado com sucesso!')
+const snackbarMessage = ref('')
 const snackbarColor = ref('success')
+
 const nomeRemedio = ref('')
 const principioAtivo = ref('')
-const tarja = ref('Livre')
-const tarjasOpcoes = ['Livre', 'Amarela', 'Vermelha', 'Preta']
+const tarja = ref('Sem Tarja')
+const tarjasOpcoes = ['Sem Tarja', 'Amarela', 'Vermelha', 'Preta']
+
+const filterTarja = ref('Todos');
+const filterTarjasOpcoes = ['Todos', ...tarjasOpcoes];
+
 const masterPassword = ref('')
 const masterPasswordError = ref(false)
-const SIMULATED_MASTER_PASSWORD = '123' 
+
 
 const resetForm = () => {
     nomeRemedio.value = ''
@@ -58,41 +70,140 @@ const resetForm = () => {
     masterPasswordError.value = false
 }
 
-const handleConcluirRegistro = () => {
-    showConfirmPasswordDialog.value = true;
-}
-
-const confirmarESalvar = () => {
-    masterPasswordError.value = false;
+const fetchItems = async () => {
+    loading.value = true;
     
-    if (masterPassword.value !== SIMULATED_MASTER_PASSWORD) {
-        masterPasswordError.value = true;
-        snackbarColor.value = 'error';
-        snackbarMessage.value = 'Senha-mestre incorreta. Tente novamente.';
-        showSnackbar.value = true;
-        return;
+    const params = new URLSearchParams();
+    
+
+    
+    if (options.value.search) { 
+        params.append('nome', options.value.search);
     }
 
+    if (filterTarja.value && filterTarja.value !== 'Todos') {
+        params.append('tarja', filterTarja.value);
+    }
+    
+    const sortBy = options.value.sortBy?.[0]?.key || 'nome';
+    const sortDirection = options.value.sortBy?.[0]?.order || 'asc';
+    
+    params.append('ordenar_por', sortBy);
+    params.append('direcao', sortDirection);
+
+    try {
+        const url = `${API_BASE_URL}?${params.toString()}`;
+        console.log('Fetching:', url); 
+        
+        const response = await fetch(url, { signal: AbortSignal.timeout(API_TIMEOUT) });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data: Medicamento[] = await response.json();
+        
+        items.value = data;
+        totalItems.value = data.length; 
+
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        snackbarColor.value = 'error';
+        snackbarMessage.value = 'Erro ao carregar dados. Verifique o backend.';
+        showSnackbar.value = true;
+        
+        items.value = [];
+        totalItems.value = 0;
+    } finally {
+        loading.value = false;
+    }
+}
+
+interface MedicamentoCreate {
+    nome: string;
+    principio_ativo: string;
+    tarja: string;
+}
+
+const criarMedicamento = async (masterPass: string) => {
+    const payload: MedicamentoCreate = {
+        nome: nomeRemedio.value,
+        principio_ativo: principioAtivo.value,
+        tarja: tarja.value,
+    };
+
+    try {
+        const response = await fetch(API_BASE_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Admin-Pass': masterPass, 
+            },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(API_TIMEOUT),
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            return { success: false, message: 'Falha na autenticação: Senha-mestre rejeitada.' };
+        }
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const newMedicamento: Medicamento = await response.json();
+        console.log('Medicamento criado com sucesso:', newMedicamento);
+        
+        return { success: true, message: 'Remédio cadastrado com sucesso!' };
+
+    } catch (error) {
+        console.error('Erro ao criar medicamento:', error);
+        return { success: false, message: 'Erro de rede ou servidor ao cadastrar.' };
+    }
+};
+
+const handleConcluirRegistro = () => {
+    showConfirmPasswordDialog.value = true;
+    masterPassword.value = '';
+    masterPasswordError.value = false;
+}
+
+const confirmarESalvar = async () => {
+    masterPasswordError.value = false;
     isSubmitting.value = true
+    
+    const trimmedPassword = masterPassword.value.trim();
+    
+    if (!trimmedPassword) {
+        masterPasswordError.value = true;
+        snackbarColor.value = 'error';
+        snackbarMessage.value = 'A senha não pode estar vazia.';
+        showSnackbar.value = true;
+        isSubmitting.value = false;
+        return;
+    }
+    
+    const result = await criarMedicamento(trimmedPassword);
+    
+    isSubmitting.value = false
     showConfirmPasswordDialog.value = false 
     showRegisterDialog.value = false 
-    
-    
-    console.log('Novo Remédio Registrado APÓS CONFIRMAÇÃO:', {
-        nomeRemedio: nomeRemedio.value,
-        principioAtivo: principioAtivo.value,
-        tarja: tarja.value,
-    })
 
-    setTimeout(() => {
-        isSubmitting.value = false
-        
-       
+    if (result.success) {
         snackbarColor.value = 'success';
-        snackbarMessage.value = 'Remédio cadastrado com sucesso!';
-        showSnackbar.value = true
-        resetForm() 
-    }, 1500)
+        snackbarMessage.value = result.message;
+        resetForm();
+        
+        options.value = { ...options.value, page: 1 };
+        
+    } else {
+        snackbarColor.value = 'error';
+        snackbarMessage.value = result.message;
+        
+        showRegisterDialog.value = true; 
+        showConfirmPasswordDialog.value = true; 
+    }
+    showSnackbar.value = true;
 }
 
 const cancelarCadastro = () => {
@@ -105,12 +216,28 @@ const cancelarConfirmacao = () => {
     masterPassword.value = '';
     masterPasswordError.value = false;
 }
+
+let searchTimeout: ReturnType<typeof setTimeout>
+watch(search, (newVal) => {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    options.value = { ...options.value, search: newVal, page: 1 }
+  }, 500)
+})
+
+watch(filterTarja, () => {
+    options.value = { ...options.value, page: 1 };
+}, { immediate: false });
+
+watch([options, filterTarja], () => {
+    fetchItems();
+}, { deep: true, immediate: true }); 
+
 </script>
 
 <template>
   <v-container class="page-container pa-8 bg-gradient" fluid>
     
-   
     <v-snackbar
         v-model="showSnackbar"
         :color="snackbarColor"
@@ -128,6 +255,7 @@ const cancelarConfirmacao = () => {
         </v-btn>
       </template>
     </v-snackbar>
+
     <v-dialog 
         v-model="showConfirmPasswordDialog" 
         max-width="400px" 
@@ -181,6 +309,7 @@ const cancelarConfirmacao = () => {
             </v-card-actions>
         </v-card>
     </v-dialog>
+
     <v-dialog v-model="showRegisterDialog" max-width="500px" transition="slide-y-transition">
         <v-card class="modal-card" rounded="xl" elevation="10">
             <v-card-title class="text-h5 font-weight-bold text-center pa-6">
@@ -287,6 +416,18 @@ const cancelarConfirmacao = () => {
         variant="outlined"
       />
 
+      <v-select
+        v-model="filterTarja"
+        :items="filterTarjasOpcoes"
+        label="Filtrar por Tarja"
+        prepend-inner-icon="mdi-filter"
+        variant="outlined"
+        density="comfortable"
+        hide-details
+        style="max-width: 200px;"
+      />
+
+
       <div class="d-flex align-center ga-2">
         <span class="text-body-2 text-slate-600">sort:</span>
         <v-menu offset-y>
@@ -297,14 +438,11 @@ const cancelarConfirmacao = () => {
             </v-btn>
           </template>
           <v-list>
-            <v-list-item @click="displaySort = 'Alfabética'">
+            <v-list-item @click="options.sortBy = [{ key: 'nome', order: 'asc' }]; displaySort = 'Alfabética'">
               <v-list-item-title>Alfabética</v-list-item-title>
             </v-list-item>
-            <v-list-item @click="displaySort = 'Data Vencimento'">
-              <v-list-item-title>Data Vencimento</v-list-item-title>
-            </v-list-item>
-            <v-list-item @click="displaySort = 'Quantidade'">
-              <v-list-item-title>Quantidade</v-list-item-title>
+            <v-list-item @click="options.sortBy = [{ key: 'criado_em', order: 'desc' }]; displaySort = 'Data de Criação'">
+              <v-list-item-title>Data de Criação</v-list-item-title>
             </v-list-item>
           </v-list>
         </v-menu>
@@ -320,6 +458,7 @@ const cancelarConfirmacao = () => {
         class="custom-table"
         hide-default-footer
         no-data-text="Nenhum remédio encontrado."
+        :items-per-page-options="itemsPerPageOptions" 
       >
 
         <template #headers>
@@ -327,7 +466,7 @@ const cancelarConfirmacao = () => {
             <th class="text-center pa-4" style="width: 10%; max-width: 10%;">
               <div class="d-flex align-center justify-center ga-2">
                 <span class="header-icon">#</span>
-                <span class="header-text">Número</span>
+                <span class="header-text">ID</span>
               </div>
             </th>
             <th class="text-left pa-4" style="width: 90%; max-width: 90%;">
@@ -380,10 +519,10 @@ const cancelarConfirmacao = () => {
 </template>
 
 <style scoped>
-
+/* --- ESTILOS DO MODAL --- */
 
 .modal-card {
-    background-color: #e9eff3;
+    background-color: #e9eff3; 
     border: 3px solid #cbd5e1;
     overflow: hidden;
 }
@@ -405,6 +544,7 @@ const cancelarConfirmacao = () => {
     letter-spacing: normal !important;
 }
 
+/* 📱 AJUSTES DE RESPONSIVIDADE DO MODAL */
 @media (max-width: 550px) {
     .modal-card {
         margin: 16px !important;
@@ -417,6 +557,9 @@ const cancelarConfirmacao = () => {
         margin-top: 8px;
     }
 }
+
+
+/* --- ESTILOS EXISTENTES DA LISTA --- */
 .bg-gradient {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   min-height: 100vh;
