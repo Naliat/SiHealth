@@ -16,7 +16,7 @@ def baixar_relatorio_geral_pdf(
     inicio: date = Query(default=date.today() - timedelta(days=30)),
     fim: date = Query(default=date.today()),
     db: Session = Depends(get_db),
-    autorizado: bool = Depends(verificar_senha_mestra)
+    
 ):
     """
     Gera um relatório completo (Estoque Atual + Histórico de Dispensação) em PDF.

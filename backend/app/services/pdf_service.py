@@ -1,9 +1,9 @@
 from io import BytesIO
 from datetime import date
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.lib.pagesizes import A4, landscape # pyright: ignore[reportMissingModuleSource]
+from reportlab.lib import colors # pyright: ignore[reportMissingModuleSource]
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle # pyright: ignore[reportMissingModuleSource]
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak # pyright: ignore[reportMissingModuleSource]
 
 class PDFService:
     def gerar_relatorio_gerencial(self, estoque: list, dispensacoes: list, inicio: date, fim: date) -> BytesIO:
