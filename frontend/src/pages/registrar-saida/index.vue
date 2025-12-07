@@ -5,7 +5,7 @@ import {useRouter} from 'vue-router';
 const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
 const API_BASE = 'http://127.0.0.1:8000/api/v1';
 const API_TIMEOUT = 5000;
-const SYSTEM_SECRET_PASSWORD = import.meta.env.VITE_MASTER_PASSWORD || 'admin_ubs_2025';
+const SYSTEM_SECRET_PASSWORD = import.meta.env.VITE_MASTER_PASSWORD || '';
 
  interface LoteDetalhe {
     numero_lote: string;
