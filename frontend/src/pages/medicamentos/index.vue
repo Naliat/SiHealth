@@ -1,388 +1,47 @@
 <script lang="ts" setup>
-import { ref, watch, onMounted } from 'vue'
+  import { ref, watch } from 'vue'
+  import { useDataTableServer } from '@/composables/useDataTableServer'
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api/v1/medicamentos';
-const API_TIMEOUT = 5000;
-const SYSTEM_SECRET_PASSWORD = import.meta.env.VITE_MASTER_PASSWORD || ''; 
+  const search = ref('')
+  const displaySort = ref('Alfabética')
 
-interface Medicamento {
-    id_medicamento: number;
-    nome: string;
-    principio_ativo: string;
-    tarja: string;
-}
+  const { items, loading, totalItems, options } = useDataTableServer('/medicamentos')
 
-interface DataTableOptions {
-    itemsPerPage: number;
-    sortBy: { key: string; order: string; }[];
-    search?: string; 
-    page: number; 
-    [key: string]: any; 
-}
-
-const search = ref('')
-const displaySort = ref('Alfabética')
-
-const items = ref<Medicamento[]>([]);
-const loading = ref(false);
-const totalItems = ref(0);
-
-const MAX_ITEMS_PER_PAGE = 500; 
-const itemsPerPageOptions = [
-    { value: 10, title: '10' },
-    { value: 50, title: '50' },
-    { value: 100, title: '100' },
-    { value: MAX_ITEMS_PER_PAGE, title: 'Todos' }
-];
-
-
-const options = ref<DataTableOptions>({
-    itemsPerPage: MAX_ITEMS_PER_PAGE, 
+  options.value = {
+    ...options.value,
+    itemsPerPage: 10,
     sortBy: [{ key: 'nome', order: 'asc' }],
-    page: 1,
-    search: '', 
-});
+  }
 
-const showRegisterDialog = ref(false)
-const showConfirmPasswordDialog = ref(false) 
-const isSubmitting = ref(false)
-const showSnackbar = ref(false)
-const snackbarMessage = ref('')
-const snackbarColor = ref('success')
+  let searchTimeout: ReturnType<typeof setTimeout>
 
-const nomeRemedio = ref('')
-const principioAtivo = ref('')
-const tarja = ref('Sem Tarja')
-const tarjasOpcoes = ['Sem Tarja', 'Amarela', 'Vermelha', 'Preta']
+  watch(search, newVal => {
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => {
+      options.value = { ...options.value, search: newVal }
+    }, 500)
+  })
 
-const filterTarja = ref('Todos');
-const filterTarjasOpcoes = ['Todos', ...tarjasOpcoes];
-
-const masterPassword = ref('')
-const masterPasswordError = ref(false)
-
-
-const resetForm = () => {
-    nomeRemedio.value = ''
-    principioAtivo.value = ''
-    tarja.value = 'Livre'
-    masterPassword.value = ''
-    masterPasswordError.value = false
-}
-
-const fetchItems = async () => {
-    loading.value = true;
-    
-    const params = new URLSearchParams();
-    
-
-    
-    if (options.value.search) { 
-        params.append('nome', options.value.search);
+  function getStatusClass (status: string) {
+    switch (status) {
+      case 'OK': {
+        return 'status-ok'
+      }
+      case 'Próx. Venc.': {
+        return 'status-warning'
+      }
+      case 'Vencido': {
+        return 'status-expired'
+      }
+      default: {
+        return ''
+      }
     }
-
-    if (filterTarja.value && filterTarja.value !== 'Todos') {
-        params.append('tarja', filterTarja.value);
-    }
-    
-    const sortBy = options.value.sortBy?.[0]?.key || 'nome';
-    const sortDirection = options.value.sortBy?.[0]?.order || 'asc';
-    
-    params.append('ordenar_por', sortBy);
-    params.append('direcao', sortDirection);
-
-    try {
-        const url = `${API_BASE_URL}?${params.toString()}`;
-        console.log('Fetching:', url); 
-        
-        const response = await fetch(url, { signal: AbortSignal.timeout(API_TIMEOUT) });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data: Medicamento[] = await response.json();
-        
-        items.value = data;
-        totalItems.value = data.length; 
-
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        snackbarColor.value = 'error';
-        snackbarMessage.value = 'Erro ao carregar dados. Verifique o backend.';
-        showSnackbar.value = true;
-        
-        items.value = [];
-        totalItems.value = 0;
-    } finally {
-        loading.value = false;
-    }
-}
-
-interface MedicamentoCreate {
-    nome: string;
-    principio_ativo: string;
-    tarja: string;
-}
-
-const criarMedicamento = async (masterPass: string) => {
-    const payload: MedicamentoCreate = {
-        nome: nomeRemedio.value,
-        principio_ativo: principioAtivo.value,
-        tarja: tarja.value,
-    };
-
-    try {
-        const response = await fetch(API_BASE_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Admin-Pass': masterPass, 
-            },
-            body: JSON.stringify(payload),
-            signal: AbortSignal.timeout(API_TIMEOUT),
-        });
-
-        if (response.status === 401 || response.status === 403) {
-            return { success: false, message: 'Falha na autenticação: Senha-mestre rejeitada.' };
-        }
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const newMedicamento: Medicamento = await response.json();
-        console.log('Medicamento criado com sucesso:', newMedicamento);
-        
-        return { success: true, message: 'Remédio cadastrado com sucesso!' };
-
-    } catch (error) {
-        console.error('Erro ao criar medicamento:', error);
-        return { success: false, message: 'Erro de rede ou servidor ao cadastrar.' };
-    }
-};
-
-const handleConcluirRegistro = () => {
-    showConfirmPasswordDialog.value = true;
-    masterPassword.value = '';
-    masterPasswordError.value = false;
-}
-
-const confirmarESalvar = async () => {
-    masterPasswordError.value = false;
-    isSubmitting.value = true
-    
-    const trimmedPassword = masterPassword.value.trim();
-    
-    if (!trimmedPassword) {
-        masterPasswordError.value = true;
-        snackbarColor.value = 'error';
-        snackbarMessage.value = 'A senha não pode estar vazia.';
-        showSnackbar.value = true;
-        isSubmitting.value = false;
-        return;
-    }
-    
-    const result = await criarMedicamento(trimmedPassword);
-    
-    isSubmitting.value = false
-    showConfirmPasswordDialog.value = false 
-    showRegisterDialog.value = false 
-
-    if (result.success) {
-        snackbarColor.value = 'success';
-        snackbarMessage.value = result.message;
-        resetForm();
-        
-        options.value = { ...options.value, page: 1 };
-        
-    } else {
-        snackbarColor.value = 'error';
-        snackbarMessage.value = result.message;
-        
-        showRegisterDialog.value = true; 
-        showConfirmPasswordDialog.value = true; 
-    }
-    showSnackbar.value = true;
-}
-
-const cancelarCadastro = () => {
-    showRegisterDialog.value = false;
-    resetForm();
-}
-
-const cancelarConfirmacao = () => {
-    showConfirmPasswordDialog.value = false;
-    masterPassword.value = '';
-    masterPasswordError.value = false;
-}
-
-let searchTimeout: ReturnType<typeof setTimeout>
-watch(search, (newVal) => {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    options.value = { ...options.value, search: newVal, page: 1 }
-  }, 500)
-})
-
-watch(filterTarja, () => {
-    options.value = { ...options.value, page: 1 };
-}, { immediate: false });
-
-watch([options, filterTarja], () => {
-    fetchItems();
-}, { deep: true, immediate: true }); 
-
+  }
 </script>
 
 <template>
   <v-container class="page-container pa-8 bg-gradient" fluid>
-    
-    <v-snackbar
-        v-model="showSnackbar"
-        :color="snackbarColor"
-        timeout="3000"
-        location="top right"
-    >
-      {{ snackbarMessage }}
-      <template #actions>
-        <v-btn
-          color="white"
-          variant="text"
-          @click="showSnackbar = false"
-        >
-          Fechar
-        </v-btn>
-      </template>
-    </v-snackbar>
-
-    <v-dialog 
-        v-model="showConfirmPasswordDialog" 
-        max-width="400px" 
-        transition="slide-y-transition"
-        persistent
-    >
-        <v-card class="modal-card pa-6" rounded="xl" elevation="10">
-            <v-card-title class="text-h4 font-weight-bold text-center pa-0 mb-4">
-                Confirmação
-            </v-card-title>
-            <p class="text-h6 text-slate-600 text-center mb-6">Confirme colocando a senha-mestre</p>
-            
-            <v-card-text>
-                <v-text-field
-                    v-model="masterPassword"
-                    label="Senha-mestre"
-                    prepend-inner-icon="mdi-lock"
-                    :type="'password'"
-                    variant="outlined"
-                    density="comfortable"
-                    rounded="lg"
-                    :error="masterPasswordError"
-                    :error-messages="masterPasswordError ? 'Senha incorreta.' : ''"
-                    @keydown.enter="confirmarESalvar"
-                />
-            </v-card-text>
-            
-            <v-card-actions class="pa-0 d-flex justify-space-between">
-                <v-btn
-                    class="modal-btn-cancel"
-                    color="#c25353"
-                    variant="flat"
-                    size="large"
-                    rounded="lg"
-                    @click="cancelarConfirmacao"
-                >
-                    Cancelar
-                </v-btn>
-                <v-btn
-                    class="modal-btn-confirm"
-                    color="#3b5b76"
-                    variant="flat"
-                    size="large"
-                    rounded="lg"
-                    @click="confirmarESalvar"
-                    :loading="isSubmitting"
-                    :disabled="isSubmitting"
-                >
-                    Concluir
-                </v-btn>
-            </v-card-actions>
-        </v-card>
-    </v-dialog>
-
-    <v-dialog v-model="showRegisterDialog" max-width="500px" transition="slide-y-transition">
-        <v-card class="modal-card" rounded="xl" elevation="10">
-            <v-card-title class="text-h5 font-weight-bold text-center pa-6">
-                Registrar Remédio
-            </v-card-title>
-            <p class="text-center text-subtitle-1 text-slate-600 mb-4">Registro de novo remédio</p>
-            
-           
-            <v-card-text class="pa-6">
-                <v-card class="pa-6 form-box" rounded="lg" elevation="1">
-                    <v-card-title class="text-center text-h6 font-weight-bold pa-0 mb-4">
-                        Dados do Remédio:
-                    </v-card-title>
-                    
-                    <v-text-field
-                        v-model="nomeRemedio"
-                        label="Nome do remédio:"
-                        prepend-inner-icon="mdi-pill"
-                        variant="outlined"
-                        density="comfortable"
-                        rounded="lg"
-                    />
-
-                    <v-text-field
-                        v-model="principioAtivo"
-                        label="Princípio Ativo:"
-                        prepend-inner-icon="mdi-flask"
-                        variant="outlined"
-                        density="comfortable"
-                        rounded="lg"
-                    />
-                    
-                    <v-select
-                        v-model="tarja"
-                        :items="tarjasOpcoes"
-                        label="Tarja:"
-                        prepend-inner-icon="mdi-lock"
-                        variant="outlined"
-                        density="comfortable"
-                        rounded="lg"
-                        hide-details
-                    />
-                </v-card>
-            </v-card-text>
-            
-            <v-card-actions class="pa-6 d-flex justify-space-between">
-                <v-btn
-                    class="modal-btn-cancel"
-                    color="#c25353"
-                    variant="flat"
-                    size="large"
-                    rounded="lg"
-                    @click="cancelarCadastro"
-                    :disabled="isSubmitting"
-                >
-                    Cancelar
-                </v-btn>
-                <v-btn
-                    class="modal-btn-confirm"
-                    color="#3b5b76"
-                    variant="flat"
-                    size="large"
-                    rounded="lg"
-                    @click="handleConcluirRegistro"
-                    :loading="isSubmitting"
-                    :disabled="isSubmitting"
-                >
-                    Concluir
-                </v-btn>
-            </v-card-actions>
-        </v-card>
-    </v-dialog>
-
 
     <div class="d-flex justify-space-between align-start mb-8">
       <div>
@@ -416,18 +75,6 @@ watch([options, filterTarja], () => {
         variant="outlined"
       />
 
-      <v-select
-        v-model="filterTarja"
-        :items="filterTarjasOpcoes"
-        label="Filtrar por Tarja"
-        prepend-inner-icon="mdi-filter"
-        variant="outlined"
-        density="comfortable"
-        hide-details
-        style="max-width: 200px;"
-      />
-
-
       <div class="d-flex align-center ga-2">
         <span class="text-body-2 text-slate-600">sort:</span>
         <v-menu offset-y>
@@ -438,11 +85,14 @@ watch([options, filterTarja], () => {
             </v-btn>
           </template>
           <v-list>
-            <v-list-item @click="options.sortBy = [{ key: 'nome', order: 'asc' }]; displaySort = 'Alfabética'">
+            <v-list-item @click="displaySort = 'Alfabética'">
               <v-list-item-title>Alfabética</v-list-item-title>
             </v-list-item>
-            <v-list-item @click="options.sortBy = [{ key: 'criado_em', order: 'desc' }]; displaySort = 'Data de Criação'">
-              <v-list-item-title>Data de Criação</v-list-item-title>
+            <v-list-item @click="displaySort = 'Data Vencimento'">
+              <v-list-item-title>Data Vencimento</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="displaySort = 'Quantidade'">
+              <v-list-item-title>Quantidade</v-list-item-title>
             </v-list-item>
           </v-list>
         </v-menu>
@@ -452,13 +102,12 @@ watch([options, filterTarja], () => {
     <v-card class="table-card" elevation="3" rounded="xl">
       <v-data-table-server
         v-model:options="options"
+        class="custom-table"
+        hide-default-footer
         :items="items"
         :items-length="totalItems"
         :loading="loading"
-        class="custom-table"
-        hide-default-footer
         no-data-text="Nenhum remédio encontrado."
-        :items-per-page-options="itemsPerPageOptions" 
       >
 
         <template #headers>
@@ -466,13 +115,26 @@ watch([options, filterTarja], () => {
             <th class="text-center pa-4" style="width: 10%; max-width: 10%;">
               <div class="d-flex align-center justify-center ga-2">
                 <span class="header-icon">#</span>
-                <span class="header-text">ID</span>
+                <span class="header-text">Número</span>
               </div>
             </th>
-            <th class="text-left pa-4" style="width: 90%; max-width: 90%;">
+            <th class="text-left pa-4" style="width: 50%; max-width: 50%;">
               <div class="d-flex align-center ga-2">
                 <span class="header-icon">Tt</span>
                 <span class="header-text">Nome do remédio</span>
+              </div>
+            </th>
+            <th class="pa-4" style="width: 2%; max-width: 2%" />
+            <th class="text-center pa-4" style="width: 19%; max-width: 19%;">
+              <div class="d-flex align-center justify-center ga-2">
+                <span class="header-icon"><v-icon>mdi-check-circle-outline</v-icon></span>
+                <span class="header-text">Status</span>
+              </div>
+            </th>
+            <th class="text-center pa-4" style="width: 19%; max-width: 19%;">
+              <div class="d-flex align-center justify-center ga-2">
+                <span class="header-icon">⋮⋮</span>
+                <span class="header-text">Ações</span>
               </div>
             </th>
           </tr>
@@ -488,16 +150,43 @@ watch([options, filterTarja], () => {
 
             <td class="text-left pa-5">
               <div class="d-flex align-center">
-                <div class="vertical-divider"></div>
+                <div class="vertical-divider" />
                 <span class="medicine-name">{{ item.nome ?? '-' }}</span>
               </div>
+            </td>
+
+            <td class="pa-5" />
+
+            <td class="text-center pa-5">
+              <v-chip
+                class="status-chip"
+                :class="getStatusClass(item.status ?? '')"
+                size="small"
+              >
+                {{ item.status ?? '—' }}
+              </v-chip>
+            </td>
+
+            <td class="text-center pa-5">
+              <v-tooltip location="top" text="Ver detalhes do remédio">
+                <template #activator="{ props }">
+                  <v-btn
+                    class="action-btn"
+                    icon
+                    size="small"
+                    v-bind="props"
+                  >
+                    <v-icon size="20">mdi-chevron-down</v-icon>
+                  </v-btn>
+                </template>
+              </v-tooltip>
             </td>
           </tr>
         </template>
 
         <template #body.append>
           <tr>
-            <td class="table-footer pa-6" colspan="2">
+            <td class="table-footer pa-6" colspan="5">
               <div class="d-flex justify-end">
                 <v-btn
                   class="report-btn"
@@ -505,9 +194,8 @@ watch([options, filterTarja], () => {
                   rounded="lg"
                   size="large"
                   variant="flat"
-                  @click="showRegisterDialog = true"
                 >
-                  + Registrar novo remédio 
+                  Gerar relatório da lista de remédios
                 </v-btn>
               </div>
             </td>
@@ -519,47 +207,7 @@ watch([options, filterTarja], () => {
 </template>
 
 <style scoped>
-/* --- ESTILOS DO MODAL --- */
 
-.modal-card {
-    background-color: #e9eff3; 
-    border: 3px solid #cbd5e1;
-    overflow: hidden;
-}
-
-.form-box {
-    background-color: white;
-    border: 1px solid #e2e8f0;
-}
-
-.modal-btn-cancel {
-    color: white !important;
-    text-transform: none !important;
-    letter-spacing: normal !important;
-}
-
-.modal-btn-confirm {
-    color: white !important;
-    text-transform: none !important;
-    letter-spacing: normal !important;
-}
-
-/* 📱 AJUSTES DE RESPONSIVIDADE DO MODAL */
-@media (max-width: 550px) {
-    .modal-card {
-        margin: 16px !important;
-    }
-    .v-card-actions {
-        flex-direction: column;
-    }
-    .modal-btn-cancel, .modal-btn-confirm {
-        width: 100%;
-        margin-top: 8px;
-    }
-}
-
-
-/* --- ESTILOS EXISTENTES DA LISTA --- */
 .bg-gradient {
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   min-height: 100vh;
@@ -702,6 +350,48 @@ watch([options, filterTarja], () => {
   font-size: 1rem;
   font-weight: 500;
   color: #0f172a;
+}
+
+.status-chip {
+  font-weight: 500 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  border-radius: 16px !important;
+  padding: 0 16px !important;
+  height: 28px !important;
+  border: 1px solid !important;
+}
+
+.status-ok {
+  background-color: #d1fae5 !important;
+  color: #059669 !important;
+  border-color: #a7f3d0 !important;
+}
+
+.status-warning {
+  background-color: #fef3c7 !important;
+  color: #d97706 !important;
+  border-color: #fde68a !important;
+}
+
+.status-expired {
+  background-color: #fee2e2 !important;
+  color: #dc2626 !important;
+  border-color: #fecaca !important;
+}
+
+.action-btn {
+  background-color: #475569 !important;
+  color: white !important;
+  border-radius: 50% !important;
+  width: 40px !important;
+  height: 40px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:hover {
+  background-color: #334155 !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
 .table-footer {
