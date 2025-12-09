@@ -1,20 +1,29 @@
+# app/schemas/saida.py
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
 
 class SaidaBase(BaseModel):
-    numero_de_caixas_entregues: int
-    quantidade_por_caixa: int
+    # Dados do Paciente
+    cns_paciente: str
+    nome_paciente: Optional[str] = None
+    numero_receita: Optional[str] = None
+    
+    # Dados da Saída
+    tipo_saida: str 
     observacao: Optional[str] = None
+    quantidade: int
 
+# INPUT: O usuário digita o NÚMERO do lote, não o ID
 class SaidaCreate(SaidaBase):
-    id_lote: int
-    id_paciente: int
-    id_usuario_responsavel: int 
+    numero_lote: str
 
+# OUTPUT: O sistema responde com os dados salvos
 class SaidaResponse(SaidaBase):
     id_saida: int
-    quantidade_total_entregue: int
     data_saida: datetime
+    
+    # Campo opcional para mostrar na confirmação qual remédio foi
+    nome_medicamento_snapshot: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)

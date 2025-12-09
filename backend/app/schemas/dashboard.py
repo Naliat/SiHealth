@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+# app/schemas/dashboard.py
+from pydantic import BaseModel, ConfigDict
 from typing import List
 from datetime import date
 
@@ -9,28 +10,30 @@ class DashboardKPIs(BaseModel):
     total_itens_estoque: int
     dispensacoes_mensal: int
 
-# 2. Gráfico de Barras (Mais Retirados)
-class MedicamentoMaisRetirado(BaseModel):
+# 2. Gráfico de Barras: Medicamentos mais retirados
+class MedicamentoPopulares(BaseModel):
     nome: str
     total_saidas: int
 
-# 3. Gráfico de Linha (Frequência Mensal)
+# 3. Gráfico de Linha: Frequência de dispensações (Jan-Dez)
 class FrequenciaMensal(BaseModel):
-    mes: str # Ex: "Jan", "Fev" ou "2024-01"
+    mes: str # "1", "2", ... "12"
     quantidade: int
 
-# 4. Tabelas de Alerta (Vencimento e Baixo Estoque)
+# 4. Tabelas de Alerta (Vencimento e Estoque Baixo)
 class ItemAlerta(BaseModel):
     nome_medicamento: str
-    numero_lote: str
+    lote: str
     quantidade: int
-    validade: date
-    status: str # "Vencido", "Próx. Venc.", "Baixo Estoque"
+    data_validade: date
+    status: str # "Vencido", "Próx. Venc.", "Baixo"
 
-# --- RESPOSTA COMPLETA ---
+# --- RESPOSTA GERAL ---
 class DashboardResponse(BaseModel):
     kpis: DashboardKPIs
-    grafico_barras: List[MedicamentoMaisRetirado]
+    grafico_barras: List[MedicamentoPopulares]
     grafico_linha: List[FrequenciaMensal]
     tabela_vencimento: List[ItemAlerta]
     tabela_baixo_estoque: List[ItemAlerta]
+
+    model_config = ConfigDict(from_attributes=True)

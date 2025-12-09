@@ -1,88 +1,91 @@
 <script lang="ts" setup>
-import {reactive, ref, watch} from 'vue'
-import {useDataTableServer} from '@/composables/useDataTableServer'
+  import { reactive, ref, watch } from 'vue'
+  import { useDataTableServer } from '@/composables/useDataTableServer'
 
-const state = reactive({
-  search: '',
-  displaySort: 'Alfabética' as 'Alfabética' | 'Data Vencimento' | 'Quantidade',
-  expanded: {} as Record<number, boolean>,
-})
+  const state = reactive({
+    search: '',
+    displaySort: 'Alfabética' as 'Alfabética' | 'Data Vencimento' | 'Quantidade',
+    expanded: {} as Record<number, boolean>,
+  })
 
-const {items, loading, totalItems, options} = useDataTableServer('/lotes')
+  const { items, loading, totalItems, options } = useDataTableServer('/lotes')
 
-const localFallback = ref([
-  {
-    numero_lote: 'DEV-0001',
-    numero_caixa: '1',
-    quantidade_por_caixa: 12,
-    quantidade_inicial: 12,
-    data_fabricacao: '2025-11-28',
-    data_validade: '2099-12-31',
-    id_lote: 1,
-    id_medicamento: 1001,
-    quantidade_atual: 12,
-    criado_em: '2025-11-28T13:34:45.422Z',
-    status: 'OK',
-  },
-  {
-    numero_lote: 'DEV-0002',
-    numero_caixa: '0',
-    quantidade_por_caixa: 12,
-    quantidade_inicial: 24,
-    data_fabricacao: '2025-11-28',
-    data_validade: '2024-12-31',
-    id_lote: 2,
-    id_medicamento: 1002,
-    quantidade_atual: 0,
-    criado_em: '2025-11-28T13:34:45.422Z',
-    status: 'Próx. Venc.',
-  },
-])
+  const localFallback = ref([
+    {
+      numero_lote: 'DEV-0001',
+      numero_caixa: '1',
+      quantidade_por_caixa: 12,
+      quantidade_inicial: 12,
+      data_fabricacao: '2025-11-28',
+      data_validade: '2099-12-31',
+      id_lote: 1,
+      id_medicamento: 1001,
+      quantidade_atual: 12,
+      criado_em: '2025-11-28T13:34:45.422Z',
+      status: 'OK',
+    },
+    {
+      numero_lote: 'DEV-0002',
+      numero_caixa: '0',
+      quantidade_por_caixa: 12,
+      quantidade_inicial: 24,
+      data_fabricacao: '2025-11-28',
+      data_validade: '2024-12-31',
+      id_lote: 2,
+      id_medicamento: 1002,
+      quantidade_atual: 0,
+      criado_em: '2025-11-28T13:34:45.422Z',
+      status: 'Próx. Venc.',
+    },
+  ])
 
-options.value = {
-  ...options.value,
-  itemsPerPage: 10,
-  sortBy: [{key: 'data_validade', order: 'asc'}],
-}
-
-watch([loading, items], ([loadingVal, itemsVal]) => {
-  if (!loadingVal && Array.isArray(itemsVal) && itemsVal.length === 0) {
-    items.value = localFallback.value
-    totalItems.value = localFallback.value.length
+  options.value = {
+    ...options.value,
+    itemsPerPage: 10,
+    sortBy: [{ key: 'data_validade', order: 'asc' }],
   }
-})
 
-let searchTimeout: ReturnType<typeof setTimeout>
+  watch([loading, items], ([loadingVal, itemsVal]) => {
+    if (!loadingVal && Array.isArray(itemsVal) && itemsVal.length === 0) {
+      items.value = localFallback.value
+      totalItems.value = localFallback.value.length
+    }
+  })
 
-watch(
-  () => state.search,
-  (newVal) => {
-    clearTimeout(searchTimeout)
-    searchTimeout = setTimeout(() => {
-      options.value = {...options.value, search: newVal}
-    }, 500)
+  let searchTimeout: ReturnType<typeof setTimeout>
+
+  watch(
+    () => state.search,
+    newVal => {
+      clearTimeout(searchTimeout)
+      searchTimeout = setTimeout(() => {
+        options.value = { ...options.value, search: newVal }
+      }, 500)
+    },
+  )
+
+  function getStatusClass (status: string) {
+    switch (status) {
+      case 'OK': {
+        return 'status-ok'
+      }
+      case 'Próx. Venc.': {
+        return 'status-warning'
+      }
+      case 'Vencido': {
+        return 'status-expired'
+      }
+      default: {
+        return ''
+      }
+    }
   }
-)
 
-
-const getStatusClass = (status: string) => {
-  switch (status) {
-    case 'OK':
-      return 'status-ok'
-    case 'Próx. Venc.':
-      return 'status-warning'
-    case 'Vencido':
-      return 'status-expired'
-    default:
-      return ''
+  function toggleRow (idLote: number) {
+    state.expanded[idLote] = !state.expanded[idLote]
   }
-}
 
-const toggleRow = (idLote: number) => {
-  state.expanded[idLote] = !state.expanded[idLote]
-}
-
-const isExpanded = (idLote: number) => state.expanded[idLote]
+  const isExpanded = (idLote: number) => state.expanded[idLote]
 
 </script>
 
@@ -148,11 +151,11 @@ const isExpanded = (idLote: number) => state.expanded[idLote]
     <v-card class="table-card" elevation="3" rounded="xl">
       <v-data-table-server
         v-model:options="options"
+        class="custom-table"
+        hide-default-footer
         :items="items"
         :items-length="totalItems"
         :loading="loading"
-        class="custom-table"
-        hide-default-footer
         no-data-text="Nenhum item de estoque encontrado."
       >
 
@@ -170,7 +173,7 @@ const isExpanded = (idLote: number) => state.expanded[idLote]
                 <span class="header-text">Nome do remédio</span>
               </div>
             </th>
-            <th class="pa-4" style="width: 2%; max-width: 2%"></th>
+            <th class="pa-4" style="width: 2%; max-width: 2%" />
             <th class="text-center pa-4" style="width: 19%; max-width: 19%;">
               <div class="d-flex align-center justify-center ga-2">
                 <span class="header-icon"><v-icon>mdi-check-circle-outline</v-icon></span>
@@ -197,17 +200,17 @@ const isExpanded = (idLote: number) => state.expanded[idLote]
 
             <td class="text-left pa-5">
               <div class="d-flex align-center">
-                <div class="vertical-divider"></div>
+                <div class="vertical-divider" />
                 <span class="medicine-name">{{ item.numero_lote ?? '-' }}</span>
               </div>
             </td>
 
-            <td class="pa-5"></td>
+            <td class="pa-5" />
 
             <td class="text-center pa-5">
               <v-chip
-                :class="getStatusClass(item.status ?? '')"
                 class="status-chip"
+                :class="getStatusClass(item.status ?? '')"
                 size="small"
               >
                 {{ item.status ?? '—' }}

@@ -1,123 +1,123 @@
 <script lang="ts" setup>
-import { reactive, computed } from 'vue';
-import { registrarEntrada } from '@/services/movimentacaoService';
+  import { computed, reactive } from 'vue'
+  import { registrarEntrada } from '@/services/movimentacaoService'
 
-const form = reactive({
-  // Use loteId (numeric) to match backend expectation for id_lote
-  loteId: '' as string | number,
-  codigo: '',
-  nome: '',
-  principioAtivo: '',
-  tarja: null as string | null,
-  caixas: 1,
-  qtdPorCaixa: 1,
-  dosagem: '',
-  dosagemUnidade: 'mg',
-  lote: '',
-  validade: '',
-  fabricante: '',
-  registroMs: ''
-});
+  const form = reactive({
+    // Use loteId (numeric) to match backend expectation for id_lote
+    loteId: '' as string | number,
+    codigo: '',
+    nome: '',
+    principioAtivo: '',
+    tarja: null as string | null,
+    caixas: 1,
+    qtdPorCaixa: 1,
+    dosagem: '',
+    dosagemUnidade: 'mg',
+    lote: '',
+    validade: '',
+    fabricante: '',
+    registroMs: '',
+  })
 
-const tarjaOptions = ['Sem Tarja', 'Tarja Amarela', 'Tarja Vermelha', 'Tarja Preta'];
-const unidadeOptions = ['mg', 'g', 'ml', 'mcg'];
+  const tarjaOptions = ['Sem Tarja', 'Tarja Amarela', 'Tarja Vermelha', 'Tarja Preta']
+  const unidadeOptions = ['mg', 'g', 'ml', 'mcg']
 
-const state = reactive({
-  loading: false,
-  errors: {
-    loteId: null as string | null,
-    quantidade: null as string | null,
-  },
-  message: null as string | null,
-});
+  const state = reactive({
+    loading: false,
+    errors: {
+      loteId: null as string | null,
+      quantidade: null as string | null,
+    },
+    message: null as string | null,
+  })
 
-const idUsuarioResponsavel = 1; // temporário, conforme frontend existente
+  const idUsuarioResponsavel = 1 // temporário, conforme frontend existente
 
-const quantidadeTotal = computed(() => {
-  const caixas = Number(form.caixas) || 0;
-  const qtd = Number(form.qtdPorCaixa) || 0;
-  return caixas * qtd;
-});
+  const quantidadeTotal = computed(() => {
+    const caixas = Number(form.caixas) || 0
+    const qtd = Number(form.qtdPorCaixa) || 0
+    return caixas * qtd
+  })
 
-const updateNumber = (field: 'caixas' | 'qtdPorCaixa', delta: number) => {
-  const current = Number(form[field]) || 0;
-  const newValue = current + delta;
-  form[field] = newValue < 1 ? 1 : newValue;
-};
-
-const onNumberInput = (field: 'caixas' | 'qtdPorCaixa', value: any) => {
-  const n = Number(value);
-  form[field] = isNaN(n) || n < 1 ? 1 : Math.floor(n);
-};
-
-const clearErrors = () => {
-  state.errors.loteId = null;
-  state.errors.quantidade = null;
-  state.message = null;
-};
-
-const validateForm = () => {
-  clearErrors();
-  let valid = true;
-
-  if (!form.loteId && form.loteId !== 0) {
-    state.errors.loteId = 'Informe o ID do lote';
-    valid = false;
-  } else if (Number.isNaN(Number(form.loteId))) {
-    state.errors.loteId = 'ID do lote inválido';
-    valid = false;
+  function updateNumber (field: 'caixas' | 'qtdPorCaixa', delta: number) {
+    const current = Number(form[field]) || 0
+    const newValue = current + delta
+    form[field] = Math.max(newValue, 1)
   }
 
-  if (quantidadeTotal.value < 1) {
-    state.errors.quantidade = 'Quantidade deve ser >= 1';
-    valid = false;
+  function onNumberInput (field: 'caixas' | 'qtdPorCaixa', value: any) {
+    const n = Number(value)
+    form[field] = isNaN(n) || n < 1 ? 1 : Math.floor(n)
   }
 
-  return valid;
-};
+  function clearErrors () {
+    state.errors.loteId = null
+    state.errors.quantidade = null
+    state.message = null
+  }
 
-const clearForm = () => {
-  form.loteId = '';
-  form.codigo = '';
-  form.nome = '';
-  form.principioAtivo = '';
-  form.tarja = null;
-  form.caixas = 1;
-  form.qtdPorCaixa = 1;
-  form.dosagem = '';
-  form.dosagemUnidade = 'mg';
-  form.lote = '';
-  form.validade = '';
-  form.fabricante = '';
-  form.registroMs = '';
-  clearErrors();
-};
+  function validateForm () {
+    clearErrors()
+    let valid = true
 
-const submitForm = async () => {
-  if (!validateForm()) return;
+    if (!form.loteId && form.loteId !== 0) {
+      state.errors.loteId = 'Informe o ID do lote'
+      valid = false
+    } else if (Number.isNaN(Number(form.loteId))) {
+      state.errors.loteId = 'ID do lote inválido'
+      valid = false
+    }
 
-  state.loading = true;
-  state.message = null;
+    if (quantidadeTotal.value < 1) {
+      state.errors.quantidade = 'Quantidade deve ser >= 1'
+      valid = false
+    }
 
-  try {
+    return valid
+  }
+
+  function clearForm () {
+    form.loteId = ''
+    form.codigo = ''
+    form.nome = ''
+    form.principioAtivo = ''
+    form.tarja = null
+    form.caixas = 1
+    form.qtdPorCaixa = 1
+    form.dosagem = ''
+    form.dosagemUnidade = 'mg'
+    form.lote = ''
+    form.validade = ''
+    form.fabricante = ''
+    form.registroMs = ''
+    clearErrors()
+  }
+
+  async function submitForm () {
+    if (!validateForm()) return
+
+    state.loading = true
+    state.message = null
+
+    try {
       const payload = {
         id_lote: Number(form.loteId),
         quantidade: Number(quantidadeTotal.value),
         id_usuario: Number(idUsuarioResponsavel),
         fornecedor: form.fabricante?.trim() || undefined,
-      } as any;
+      } as any
 
-      const data = await registrarEntrada(payload);
-      console.log('Entrada registrada com sucesso', data);
-      state.message = 'Entrada registrada com sucesso';
-      clearForm();
-    } catch (err: any) {
-      console.error('Erro ao registrar entrada', err);
-      state.message = err?.message || 'Erro ao registrar entrada';
+      const data = await registrarEntrada(payload)
+      console.log('Entrada registrada com sucesso', data)
+      state.message = 'Entrada registrada com sucesso'
+      clearForm()
+    } catch (error: any) {
+      console.error('Erro ao registrar entrada', error)
+      state.message = error?.message || 'Erro ao registrar entrada'
     } finally {
-      state.loading = false;
+      state.loading = false
     }
-};
+  }
 </script>
 
 <template>
@@ -147,69 +147,69 @@ const submitForm = async () => {
               <label class="input-label"># Lote (ID):</label>
               <v-text-field
                 v-model="form.loteId"
-                variant="solo"
                 bg-color="#f1f5f9"
+                class="rounded-input"
                 flat
                 hide-details
-                class="rounded-input"
                 placeholder="ID numérico do lote"
                 type="number"
-              ></v-text-field>
+                variant="solo"
+              />
               <div v-if="state.errors.loteId" class="error-text">{{ state.errors.loteId }}</div>
             </div>
 
             <div class="mb-4">
-              <label class="input-label"><v-icon icon="mdi-domain" size="small" class="mr-1"/> Fabricante:</label>
+              <label class="input-label"><v-icon class="mr-1" icon="mdi-domain" size="small" /> Fabricante:</label>
               <v-text-field
                 v-model="form.fabricante"
-                variant="solo"
                 bg-color="#f1f5f9"
+                class="rounded-input"
                 flat
                 hide-details
-                class="rounded-input"
-              ></v-text-field>
+                variant="solo"
+              />
             </div>
 
             <div>
-              <label class="input-label"><v-icon icon="mdi-file-document-outline" size="small" class="mr-1"/> Registro MS:</label>
+              <label class="input-label"><v-icon class="mr-1" icon="mdi-file-document-outline" size="small" /> Registro MS:</label>
               <v-text-field
                 v-model="form.registroMs"
-                variant="solo"
                 bg-color="#f1f5f9"
+                class="rounded-input"
                 flat
                 hide-details
-                class="rounded-input"
-              ></v-text-field>
+                variant="solo"
+              />
             </div>
           </v-col>
 
-          <v-col cols="12" md="5" class="pl-md-8">
+          <v-col class="pl-md-8" cols="12" md="5">
             <div class="mb-4">
-              <label class="input-label"><v-icon icon="mdi-calendar" size="small" class="mr-1"/> Validade:</label>
+              <label class="input-label"><v-icon class="mr-1" icon="mdi-calendar" size="small" /> Validade:</label>
               <v-text-field
                 v-model="form.validade"
-                type="date"
-                variant="solo"
                 bg-color="#f1f5f9"
+                class="rounded-input"
                 flat
                 hide-details
-                class="rounded-input"
-              ></v-text-field>
+                type="date"
+                variant="solo"
+              />
             </div>
 
             <div class="mb-4">
-              <label class="input-label"><v-icon icon="mdi-package-variant" size="small" class="mr-1"/> Caixas:</label>
+              <label class="input-label"><v-icon class="mr-1" icon="mdi-package-variant" size="small" /> Caixas:</label>
               <div class="custom-stepper">
                 <v-btn icon size="x-small" variant="text" @click="updateNumber('caixas', -1)">
                   <v-icon>mdi-chevron-left</v-icon>
                 </v-btn>
                 <input
-                  type="number"
                   v-model="form.caixas"
-                  @input="(e) => onNumberInput('caixas', (e.target as HTMLInputElement).value)"
                   class="stepper-input"
                   min="1"
-                />
+                  type="number"
+                  @input="(e) => onNumberInput('caixas', (e.target as HTMLInputElement).value)"
+                >
                 <v-btn icon size="x-small" variant="text" @click="updateNumber('caixas', 1)">
                   <v-icon>mdi-chevron-right</v-icon>
                 </v-btn>
@@ -217,19 +217,19 @@ const submitForm = async () => {
             </div>
 
             <div class="mb-2">
-              <label class="input-label"><v-icon icon="mdi-grid" size="small" class="mr-1"/> Quantidade:</label>
+              <label class="input-label"><v-icon class="mr-1" icon="mdi-grid" size="small" /> Quantidade:</label>
               <div class="d-flex align-center">
                 <div class="custom-stepper mr-2">
                   <v-btn icon size="x-small" variant="text" @click="updateNumber('qtdPorCaixa', -1)">
                     <v-icon>mdi-chevron-left</v-icon>
                   </v-btn>
                   <input
-                    type="number"
                     v-model="form.qtdPorCaixa"
-                    @input="(e) => onNumberInput('qtdPorCaixa', (e.target as HTMLInputElement).value)"
                     class="stepper-input"
                     min="1"
-                  />
+                    type="number"
+                    @input="(e) => onNumberInput('qtdPorCaixa', (e.target as HTMLInputElement).value)"
+                  >
                   <v-btn icon size="x-small" variant="text" @click="updateNumber('qtdPorCaixa', 1)">
                     <v-icon>mdi-chevron-right</v-icon>
                   </v-btn>
@@ -252,27 +252,71 @@ const submitForm = async () => {
         <v-row dense>
           <v-col cols="12" md="8">
             <div class="mb-4">
-              <label class="input-label"><v-icon icon="mdi-pill" size="small" class="mr-1"/> Nome do remédio:</label>
-              <v-text-field v-model="form.nome" placeholder="Digite o nome" variant="solo" bg-color="#f1f5f9" flat hide-details class="rounded-input" />
+              <label class="input-label"><v-icon class="mr-1" icon="mdi-pill" size="small" /> Nome do remédio:</label>
+              <v-text-field
+                v-model="form.nome"
+                bg-color="#f1f5f9"
+                flat
+                class="rounded-input"
+                hide-details
+                placeholder="Digite o nome"
+                variant="solo"
+              />
             </div>
 
             <div class="mb-4">
-              <label class="input-label"><v-icon icon="mdi-flask" size="small" class="mr-1"/> Princípio Ativo:</label>
-              <v-text-field v-model="form.principioAtivo" placeholder="Digite o princípio ativo" variant="solo" bg-color="#f1f5f9" flat hide-details class="rounded-input" />
+              <label class="input-label"><v-icon class="mr-1" icon="mdi-flask" size="small" /> Princípio Ativo:</label>
+              <v-text-field
+                v-model="form.principioAtivo"
+                bg-color="#f1f5f9"
+                flat
+                class="rounded-input"
+                hide-details
+                placeholder="Digite o princípio ativo"
+                variant="solo"
+              />
             </div>
 
             <div>
-              <label class="input-label"><v-icon icon="mdi-lock" size="small" class="mr-1"/> Tarja:</label>
-              <v-select v-model="form.tarja" :items="tarjaOptions" placeholder="Selecione" variant="solo" bg-color="#f1f5f9" flat hide-details class="rounded-input" menu-icon="mdi-chevron-down" />
+              <label class="input-label"><v-icon class="mr-1" icon="mdi-lock" size="small" /> Tarja:</label>
+              <v-select
+                v-model="form.tarja"
+                bg-color="#f1f5f9"
+                flat
+                hide-details
+                class="rounded-input"
+                :items="tarjaOptions"
+                menu-icon="mdi-chevron-down"
+                placeholder="Selecione"
+variant="solo"
+              />
             </div>
           </v-col>
 
-          <v-col cols="12" md="4" class="pl-md-8">
+          <v-col class="pl-md-8" cols="12" md="4">
             <div>
-              <label class="input-label"><v-icon icon="mdi-eyedropper" size="small" class="mr-1"/> Dosagem:</label>
+              <label class="input-label"><v-icon class="mr-1" icon="mdi-eyedropper" size="small" /> Dosagem:</label>
               <div class="d-flex ga-2">
-                <v-text-field v-model="form.dosagem" placeholder="00" variant="solo" bg-color="#f1f5f9" flat hide-details class="rounded-input flex-grow-1" />
-                <v-select v-model="form.dosagemUnidade" :items="unidadeOptions" variant="solo" bg-color="#f1f5f9" flat hide-details class="rounded-input" style="max-width: 100px;" menu-icon="mdi-chevron-down" />
+                <v-text-field
+                  v-model="form.dosagem"
+                  bg-color="#f1f5f9"
+                  flat
+                  class="rounded-input flex-grow-1"
+                  hide-details
+                  placeholder="00"
+                  variant="solo"
+                />
+                <v-select
+                  v-model="form.dosagemUnidade"
+                  bg-color="#f1f5f9"
+                  flat
+                  class="rounded-input"
+                  hide-details
+                  :items="unidadeOptions"
+                  menu-icon="mdi-chevron-down"
+                  style="max-width: 100px;"
+variant="solo"
+                />
               </div>
             </div>
           </v-col>
@@ -280,13 +324,28 @@ const submitForm = async () => {
       </v-card>
 
       <div class="d-flex justify-end gap-4">
-        <v-btn class="cancel-btn" color="red" size="large" rounded="lg" variant="tonal" @click="clearForm" :disabled="state.loading">Cancelar</v-btn>
+        <v-btn
+          class="cancel-btn"
+          color="red"
+          :disabled="state.loading"
+          rounded="lg"
+          size="large"
+          variant="tonal"
+          @click="clearForm"
+        >Cancelar</v-btn>
 
-        <v-btn color="slate600" size="large" class="concluir-btn px-10" rounded="lg" type="submit" :loading="state.loading">Concluir</v-btn>
+        <v-btn
+          class="concluir-btn px-10"
+          color="slate600"
+          :loading="state.loading"
+          rounded="lg"
+          size="large"
+          type="submit"
+        >Concluir</v-btn>
       </div>
 
       <div v-if="state.message" class="mt-4">
-        <v-alert type="info" dense text="true">{{ state.message }}</v-alert>
+        <v-alert dense text="true" type="info">{{ state.message }}</v-alert>
       </div>
 
     </v-form>

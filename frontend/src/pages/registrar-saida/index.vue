@@ -1,259 +1,258 @@
 <script lang="ts" setup>
-import {computed, reactive, ref} from 'vue';
-import {useRouter} from 'vue-router';
+  import { computed, reactive, ref } from 'vue'
+  import { useRouter } from 'vue-router'
 
-const API_BASE_URL = '/api/v1';
+  const API_BASE_URL = '/api/v1'
 
-const form = reactive({
-  pacienteId: null as number | null,
-  pacienteBusca: '',
-  medicamentoId: null as number | null,
-  loteId: null as number | null,
-  numeroCaixas: 1,
-  quantidadePorCaixa: 1,
-  motivo: 'Dispensa ao Paciente',
-  dataSaida: new Date().toISOString().slice(0, 10),
-  observacao: ''
-});
+  const form = reactive({
+    pacienteId: null as number | null,
+    pacienteBusca: '',
+    medicamentoId: null as number | null,
+    loteId: null as number | null,
+    numeroCaixas: 1,
+    quantidadePorCaixa: 1,
+    motivo: 'Dispensa ao Paciente',
+    dataSaida: new Date().toISOString().slice(0, 10),
+    observacao: '',
+  })
 
-const state = ref({
-  motivosSaida: [
-    'Dispensa ao Paciente',
-    'Devolução ao Fornecedor',
-    'Descarte por Vencimento',
-    'Descarte por Danificação',
-    'Outros'
-  ] as string[],
-  pacientesItems: [] as any[],
-  medicamentosItems: [] as any[],
-  lotesDoMedicamento: [] as any[],
-  loading: {
-    pacientes: false,
-    medicamentos: false,
-    lotes: false,
-    submit: false
-  },
-  errors: {
-    pacienteId: null as string | null,
-    medicamentoId: null as string | null,
-    loteId: null as string | null,
-    numeroCaixas: null as string | null,
-    quantidadePorCaixa: null as string | null,
-  }
-});
+  const state = ref({
+    motivosSaida: [
+      'Dispensa ao Paciente',
+      'Devolução ao Fornecedor',
+      'Descarte por Vencimento',
+      'Descarte por Danificação',
+      'Outros',
+    ] as string[],
+    pacientesItems: [] as any[],
+    medicamentosItems: [] as any[],
+    lotesDoMedicamento: [] as any[],
+    loading: {
+      pacientes: false,
+      medicamentos: false,
+      lotes: false,
+      submit: false,
+    },
+    errors: {
+      pacienteId: null as string | null,
+      medicamentoId: null as string | null,
+      loteId: null as string | null,
+      numeroCaixas: null as string | null,
+      quantidadePorCaixa: null as string | null,
+    },
+  })
 
-const router = useRouter();
+  const router = useRouter()
 
-const loteSelecionado = computed(() => {
-  if (!form.loteId) return null;
-  return state.value.lotesDoMedicamento.find((l: any) => l.id === form.loteId) || null;
-});
+  const loteSelecionado = computed(() => {
+    if (!form.loteId) return null
+    return state.value.lotesDoMedicamento.find((l: any) => l.id === form.loteId) || null
+  })
 
-const quantidadeTotal = computed(() => {
-  const n = Number(form.numeroCaixas) || 0;
-  const q = Number(form.quantidadePorCaixa) || 0;
-  return n * q;
-});
+  const quantidadeTotal = computed(() => {
+    const n = Number(form.numeroCaixas) || 0
+    const q = Number(form.quantidadePorCaixa) || 0
+    return n * q
+  })
 
-const lotesDisponiveis = computed(() => {
-  return state.value.lotesDoMedicamento.map((l: any) => ({
-    title: `Lote: ${l.codigo} - Val: ${formatDate(l.validade || l.data_validade)} (Estoque: ${l.quantidade_atual ?? l.estoque ?? 0})`,
-    value: l.id,
-    original: l,
-  }));
-});
+  const lotesDisponiveis = computed(() => {
+    return state.value.lotesDoMedicamento.map((l: any) => ({
+      title: `Lote: ${l.codigo} - Val: ${formatDate(l.validade || l.data_validade)} (Estoque: ${l.quantidade_atual ?? l.estoque ?? 0})`,
+      value: l.id,
+      original: l,
+    }))
+  })
 
-const formatDate = (dateString: string | null | undefined) => {
-  if (!dateString) return '-';
-  const [year, month, day] = dateString.split('-');
-  return `${day}/${month}/${year}`;
-};
-
-const clearErrors = () => {
-  (Object.keys(state.value.errors) as Array<keyof typeof state.value.errors>).forEach((k) => {
-    state.value.errors[k] = null;
-  });
-};
-
-const fetchPacientes = async (search: string) => {
-  if (!search || search.length < 3) return;
-  state.value.loading.pacientes = true;
-  try {
-    const params = new URLSearchParams({search});
-    const res = await fetch(`${API_BASE_URL}/pessoas?${params.toString()}`);
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => null);
-      console.error('Erro ao buscar pacientes', errBody);
-      state.value.pacientesItems = [];
-      return;
-    }
-    const data = await res.json();
-    state.value.pacientesItems = Array.isArray(data) ? data : data.items ?? [];
-  } catch (e) {
-    console.error(e);
-    state.value.pacientesItems = [];
-  } finally {
-    state.value.loading.pacientes = false;
-  }
-};
-
-const fetchMedicamentos = async (search: string) => {
-  if (!search || search.length < 2) return;
-  state.value.loading.medicamentos = true;
-  try {
-    const params = new URLSearchParams({search});
-    const res = await fetch(`${API_BASE_URL}/medicamento?${params.toString()}`);
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => null);
-      console.error('Erro ao buscar medicamentos', errBody);
-      state.value.medicamentosItems = [];
-      return;
-    }
-    const data = await res.json();
-    state.value.medicamentosItems = Array.isArray(data) ? data : data.items ?? [];
-  } catch (e) {
-    console.error(e);
-    state.value.medicamentosItems = [];
-  } finally {
-    state.value.loading.medicamentos = false;
-  }
-};
-
-const fetchLotesPorMedicamento = async (medicamentoId: number | null) => {
-  if (!medicamentoId) {
-    state.value.lotesDoMedicamento = [];
-    return;
-  }
-  state.value.loading.lotes = true;
-  try {
-    const params = new URLSearchParams({medicamento_id: String(medicamentoId)});
-    const res = await fetch(`${API_BASE_URL}/lote?${params.toString()}`);
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => null);
-      console.error('Erro ao buscar lotes', errBody);
-      state.value.lotesDoMedicamento = [];
-      return;
-    }
-    const data = await res.json();
-    state.value.lotesDoMedicamento = Array.isArray(data) ? data : data.items ?? [];
-  } catch (e) {
-    console.error(e);
-    state.value.lotesDoMedicamento = [];
-  } finally {
-    state.value.loading.lotes = false;
-  }
-};
-
-// OBS: Ajustar para pegar o ID real do usuário logado quando a store de auth estiver pronta.
-const idUsuarioResponsavel = 1;
-
-// --- Validação ---
-const validateForm = () => {
-  clearErrors();
-  let valid = true;
-
-  if (!form.pacienteId) {
-    state.value.errors.pacienteId = 'Selecione um paciente';
-    valid = false;
-  }
-  if (!form.medicamentoId) {
-    state.value.errors.medicamentoId = 'Selecione um medicamento';
-    valid = false;
-  }
-  if (!form.loteId) {
-    state.value.errors.loteId = 'Selecione um lote';
-    valid = false;
-  }
-  if (!form.numeroCaixas || form.numeroCaixas < 1) {
-    state.value.errors.numeroCaixas = 'Informe o número de caixas (>= 1)';
-    valid = false;
-  }
-  if (!form.quantidadePorCaixa || form.quantidadePorCaixa < 1) {
-    state.value.errors.quantidadePorCaixa = 'Informe a quantidade por caixa (>= 1)';
-    valid = false;
+  function formatDate (dateString: string | null | undefined) {
+    if (!dateString) return '-'
+    const [year, month, day] = dateString.split('-')
+    return `${day}/${month}/${year}`
   }
 
-  const lote = loteSelecionado.value;
-  if (lote) {
-    const estoque = lote.quantidade_atual ?? lote.estoque ?? 0;
-    if (quantidadeTotal.value > estoque) {
-      state.value.errors.numeroCaixas = `Estoque insuficiente. Disponível: ${estoque}, solicitado: ${quantidadeTotal.value}`;
-      valid = false;
+  function clearErrors () {
+    for (const k of (Object.keys(state.value.errors) as Array<keyof typeof state.value.errors>)) {
+      state.value.errors[k] = null
     }
   }
 
-  return valid;
-};
+  async function fetchPacientes (search: string) {
+    if (!search || search.length < 3) return
+    state.value.loading.pacientes = true
+    try {
+      const params = new URLSearchParams({ search })
+      const res = await fetch(`${API_BASE_URL}/pessoas?${params.toString()}`)
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null)
+        console.error('Erro ao buscar pacientes', errBody)
+        state.value.pacientesItems = []
+        return
+      }
+      const data = await res.json()
+      state.value.pacientesItems = Array.isArray(data) ? data : data.items ?? []
+    } catch (error) {
+      console.error(error)
+      state.value.pacientesItems = []
+    } finally {
+      state.value.loading.pacientes = false
+    }
+  }
 
-const submitForm = async () => {
-  if (!validateForm()) return;
+  async function fetchMedicamentos (search: string) {
+    if (!search || search.length < 2) return
+    state.value.loading.medicamentos = true
+    try {
+      const params = new URLSearchParams({ search })
+      const res = await fetch(`${API_BASE_URL}/medicamento?${params.toString()}`)
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null)
+        console.error('Erro ao buscar medicamentos', errBody)
+        state.value.medicamentosItems = []
+        return
+      }
+      const data = await res.json()
+      state.value.medicamentosItems = Array.isArray(data) ? data : data.items ?? []
+    } catch (error) {
+      console.error(error)
+      state.value.medicamentosItems = []
+    } finally {
+      state.value.loading.medicamentos = false
+    }
+  }
 
-  state.value.loading.submit = true;
-  try {
-    const payload = {
-      numero_de_caixas_entregues: Number(form.numeroCaixas),
-      quantidade_por_caixa: Number(form.quantidadePorCaixa),
-      observacao: form.observacao?.trim() || '',
-      id_lote: Number(form.loteId),
-      id_paciente: Number(form.pacienteId),
-      id_usuario_responsavel: Number(idUsuarioResponsavel),
-    };
+  async function fetchLotesPorMedicamento (medicamentoId: number | null) {
+    if (!medicamentoId) {
+      state.value.lotesDoMedicamento = []
+      return
+    }
+    state.value.loading.lotes = true
+    try {
+      const params = new URLSearchParams({ medicamento_id: String(medicamentoId) })
+      const res = await fetch(`${API_BASE_URL}/lote?${params.toString()}`)
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null)
+        console.error('Erro ao buscar lotes', errBody)
+        state.value.lotesDoMedicamento = []
+        return
+      }
+      const data = await res.json()
+      state.value.lotesDoMedicamento = Array.isArray(data) ? data : data.items ?? []
+    } catch (error) {
+      console.error(error)
+      state.value.lotesDoMedicamento = []
+    } finally {
+      state.value.loading.lotes = false
+    }
+  }
 
-    const res = await fetch(`${API_BASE_URL}/movimentacao/saida`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(payload),
-    });
+  // OBS: Ajustar para pegar o ID real do usuário logado quando a store de auth estiver pronta.
+  const idUsuarioResponsavel = 1
 
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      console.error('Erro ao registrar saída', errBody);
-      return;
+  // --- Validação ---
+  function validateForm () {
+    clearErrors()
+    let valid = true
+
+    if (!form.pacienteId) {
+      state.value.errors.pacienteId = 'Selecione um paciente'
+      valid = false
+    }
+    if (!form.medicamentoId) {
+      state.value.errors.medicamentoId = 'Selecione um medicamento'
+      valid = false
+    }
+    if (!form.loteId) {
+      state.value.errors.loteId = 'Selecione um lote'
+      valid = false
+    }
+    if (!form.numeroCaixas || form.numeroCaixas < 1) {
+      state.value.errors.numeroCaixas = 'Informe o número de caixas (>= 1)'
+      valid = false
+    }
+    if (!form.quantidadePorCaixa || form.quantidadePorCaixa < 1) {
+      state.value.errors.quantidadePorCaixa = 'Informe a quantidade por caixa (>= 1)'
+      valid = false
     }
 
-    resetForm();
-    console.log('Saída registrada com sucesso');
-  } catch (e) {
-    console.error(e);
-  } finally {
-    state.value.loading.submit = false;
+    const lote = loteSelecionado.value
+    if (lote) {
+      const estoque = lote.quantidade_atual ?? lote.estoque ?? 0
+      if (quantidadeTotal.value > estoque) {
+        state.value.errors.numeroCaixas = `Estoque insuficiente. Disponível: ${estoque}, solicitado: ${quantidadeTotal.value}`
+        valid = false
+      }
+    }
+
+    return valid
   }
-};
 
-const resetForm = () => {
-  form.pacienteId = null;
-  form.pacienteBusca = '';
-  form.medicamentoId = null;
-  form.loteId = null;
-  form.numeroCaixas = 1;
-  form.quantidadePorCaixa = 1;
-  form.motivo = 'Dispensa ao Paciente';
-  form.dataSaida = new Date().toISOString().slice(0, 10);
-  form.observacao = '';
-  state.value.pacientesItems = [];
-  state.value.medicamentosItems = [];
-  state.value.lotesDoMedicamento = [];
-  clearErrors();
-};
+  async function submitForm () {
+    if (!validateForm()) return
 
-const onMedicamentoChange = (value: number | null) => {
-  form.medicamentoId = value;
-  form.loteId = null;
-  form.numeroCaixas = 1;
-  form.quantidadePorCaixa = 1;
-  fetchLotesPorMedicamento(value);
-};
+    state.value.loading.submit = true
+    try {
+      const payload = {
+        numero_de_caixas_entregues: Number(form.numeroCaixas),
+        quantidade_por_caixa: Number(form.quantidadePorCaixa),
+        observacao: form.observacao?.trim() || '',
+        id_lote: Number(form.loteId),
+        id_paciente: Number(form.pacienteId),
+        id_usuario_responsavel: Number(idUsuarioResponsavel),
+      }
 
-const onPacienteSearch = (search: string) => {
-  form.pacienteBusca = search;
-  fetchPacientes(search);
-};
+      const res = await fetch(`${API_BASE_URL}/movimentacao/saida`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
 
-const onMedicamentoSearch = (search: string) => {
-  fetchMedicamentos(search);
-};
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}))
+        console.error('Erro ao registrar saída', errBody)
+        return
+      }
+
+      resetForm()
+      console.log('Saída registrada com sucesso')
+    } catch (error) {
+      console.error(error)
+    } finally {
+      state.value.loading.submit = false
+    }
+  }
+
+  function resetForm () {
+    form.pacienteId = null
+    form.pacienteBusca = ''
+    form.medicamentoId = null
+    form.loteId = null
+    form.numeroCaixas = 1
+    form.quantidadePorCaixa = 1
+    form.motivo = 'Dispensa ao Paciente'
+    form.dataSaida = new Date().toISOString().slice(0, 10)
+    form.observacao = ''
+    state.value.pacientesItems = []
+    state.value.medicamentosItems = []
+    state.value.lotesDoMedicamento = []
+    clearErrors()
+  }
+
+  function onMedicamentoChange (value: number | null) {
+    form.medicamentoId = value
+    form.loteId = null
+    form.numeroCaixas = 1
+    form.quantidadePorCaixa = 1
+    fetchLotesPorMedicamento(value)
+  }
+
+  function onPacienteSearch (search: string) {
+    form.pacienteBusca = search
+    fetchPacientes(search)
+  }
+
+  function onMedicamentoSearch (search: string) {
+    fetchMedicamentos(search)
+  }
 </script>
-
 
 <template>
   <v-container class="page-container pa-8 bg-gradient" fluid>
@@ -281,18 +280,18 @@ const onMedicamentoSearch = (search: string) => {
               <label class="input-label">CNS:</label>
               <v-autocomplete
                 v-model="form.pacienteId"
-                :items="state.pacientesItems"
-                :loading="state.loading.pacientes"
                 bg-color="#f1f5f9"
                 class="rounded-input"
                 flat
                 hide-details="auto"
                 item-title="nome"
                 item-value="id"
+                :items="state.pacientesItems"
+                :loading="state.loading.pacientes"
                 placeholder="Digite ao menos 3 caracteres para buscar..."
                 variant="solo"
                 @update:search="onPacienteSearch"
-              ></v-autocomplete>
+              />
               <div v-if="state.errors.pacienteId" class="error-text">{{ state.errors.pacienteId }}</div>
             </v-col>
 
@@ -306,7 +305,7 @@ const onMedicamentoSearch = (search: string) => {
                 hide-details
                 placeholder="Preenchido automaticamente ao selecionar o CNS"
                 variant="solo"
-              ></v-text-field>
+              />
             </v-col>
 
             <v-col cols="12">
@@ -319,7 +318,7 @@ const onMedicamentoSearch = (search: string) => {
                 hide-details
                 placeholder="Campo ainda não integrado"
                 variant="solo"
-              ></v-text-field>
+              />
             </v-col>
           </v-row>
         </div>
@@ -340,16 +339,16 @@ const onMedicamentoSearch = (search: string) => {
               </label>
               <v-select
                 v-model="form.loteId"
-                :items="lotesDisponiveis"
-                :loading="state.loading.lotes"
                 bg-color="#f1f5f9"
                 class="rounded-input"
                 flat
                 hide-details="auto"
+                :items="lotesDisponiveis"
+                :loading="state.loading.lotes"
                 no-data-text="Nenhum lote disponível para este medicamento"
                 placeholder="Selecione o lote"
                 variant="solo"
-              ></v-select>
+              />
               <div v-if="state.errors.loteId" class="error-text">{{ state.errors.loteId }}</div>
             </v-col>
           </v-row>
@@ -359,18 +358,18 @@ const onMedicamentoSearch = (search: string) => {
               <label class="input-label">Nome do remédio:</label>
               <v-autocomplete
                 v-model="form.medicamentoId"
-                :items="state.medicamentosItems"
-                :loading="state.loading.medicamentos"
                 bg-color="#f1f5f9"
                 class="rounded-input"
                 flat
                 hide-details="auto"
                 item-title="nome"
                 item-value="id"
+                :items="state.medicamentosItems"
+                :loading="state.loading.medicamentos"
                 placeholder="Digite para buscar o medicamento..."
                 variant="solo"
-                @update:search="onMedicamentoSearch"
                 @update:model-value="onMedicamentoChange"
+                @update:search="onMedicamentoSearch"
               >
                 <template #append-inner>
                   <v-icon class="mr-1 text-slate-500" size="small">mdi-magnify</v-icon>
@@ -385,7 +384,7 @@ const onMedicamentoSearch = (search: string) => {
               <div class="d-flex justify-space-between align-center">
                 <label class="input-label mb-0">Caixas:</label>
                 <div class="stepper-wrapper">
-                  <div :class="{ 'stepper-disabled': !form.loteId }" class="custom-stepper">
+                  <div class="custom-stepper" :class="{ 'stepper-disabled': !form.loteId }">
                     <v-btn
                       :disabled="!form.loteId || form.numeroCaixas <= 1"
                       icon
@@ -398,8 +397,8 @@ const onMedicamentoSearch = (search: string) => {
 
                     <input
                       v-model.number="form.numeroCaixas"
-                      :disabled="!form.loteId"
                       class="stepper-input"
+                      :disabled="!form.loteId"
                       min="1"
                       type="number"
                     >
@@ -426,23 +425,23 @@ const onMedicamentoSearch = (search: string) => {
               <label class="input-label">Quantidade por caixa:</label>
               <v-text-field
                 v-model.number="form.quantidadePorCaixa"
-                :disabled="!form.loteId"
                 bg-color="#f1f5f9"
                 class="rounded-input"
+                :disabled="!form.loteId"
                 flat
                 hide-details
                 min="1"
                 placeholder="Ex: 30"
                 type="number"
                 variant="solo"
-              ></v-text-field>
+              />
               <div v-if="state.errors.quantidadePorCaixa" class="error-text">{{ state.errors.quantidadePorCaixa }}</div>
             </v-col>
 
             <v-col class="d-flex align-center" cols="12" md="6">
               <div
-                :class="{ 'info-box-error': state.errors.numeroCaixas || state.errors.quantidadePorCaixa }"
                 class="info-box w-100"
+                :class="{ 'info-box-error': state.errors.numeroCaixas || state.errors.quantidadePorCaixa }"
               >
                 <span class="text-caption text-slate-500">Total a retirar</span>
                 <div class="text-body-1 font-weight-bold text-slate-900">
@@ -470,13 +469,13 @@ const onMedicamentoSearch = (search: string) => {
               <label class="input-label">Tipo de saída:</label>
               <v-select
                 v-model="form.motivo"
-                :items="state.motivosSaida"
                 bg-color="#f1f5f9"
                 class="rounded-input"
                 flat
                 hide-details
+                :items="state.motivosSaida"
                 variant="solo"
-              ></v-select>
+              />
             </v-col>
           </v-row>
         </div>
@@ -493,10 +492,10 @@ const onMedicamentoSearch = (search: string) => {
           Cancelar
         </v-btn>
         <v-btn
-          :disabled="state.loading.submit"
-          :loading="state.loading.submit"
           class="concluir-btn px-10"
           color="primary"
+          :disabled="state.loading.submit"
+          :loading="state.loading.submit"
           rounded="lg"
           size="large"
           type="submit"

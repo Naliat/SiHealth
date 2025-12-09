@@ -1,39 +1,43 @@
 <script lang="ts" setup>
-import { ref, watch } from 'vue'
-import { useDataTableServer } from '@/composables/useDataTableServer'
+  import { ref, watch } from 'vue'
+  import { useDataTableServer } from '@/composables/useDataTableServer'
 
-const search = ref('')
-const displaySort = ref('Alfabética')
+  const search = ref('')
+  const displaySort = ref('Alfabética')
 
-const { items, loading, totalItems, options } = useDataTableServer('/medicamentos')
+  const { items, loading, totalItems, options } = useDataTableServer('/medicamentos')
 
-options.value = {
-  ...options.value,
-  itemsPerPage: 10,
-  sortBy: [{ key: 'nome', order: 'asc' }],
-}
-
-let searchTimeout: ReturnType<typeof setTimeout>
-
-watch(search, (newVal) => {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => {
-    options.value = { ...options.value, search: newVal }
-  }, 500)
-})
-
-const getStatusClass = (status: string) => {
-  switch (status) {
-    case 'OK':
-      return 'status-ok'
-    case 'Próx. Venc.':
-      return 'status-warning'
-    case 'Vencido':
-      return 'status-expired'
-    default:
-      return ''
+  options.value = {
+    ...options.value,
+    itemsPerPage: 10,
+    sortBy: [{ key: 'nome', order: 'asc' }],
   }
-}
+
+  let searchTimeout: ReturnType<typeof setTimeout>
+
+  watch(search, newVal => {
+    clearTimeout(searchTimeout)
+    searchTimeout = setTimeout(() => {
+      options.value = { ...options.value, search: newVal }
+    }, 500)
+  })
+
+  function getStatusClass (status: string) {
+    switch (status) {
+      case 'OK': {
+        return 'status-ok'
+      }
+      case 'Próx. Venc.': {
+        return 'status-warning'
+      }
+      case 'Vencido': {
+        return 'status-expired'
+      }
+      default: {
+        return ''
+      }
+    }
+  }
 </script>
 
 <template>
@@ -98,11 +102,11 @@ const getStatusClass = (status: string) => {
     <v-card class="table-card" elevation="3" rounded="xl">
       <v-data-table-server
         v-model:options="options"
+        class="custom-table"
+        hide-default-footer
         :items="items"
         :items-length="totalItems"
         :loading="loading"
-        class="custom-table"
-        hide-default-footer
         no-data-text="Nenhum remédio encontrado."
       >
 
@@ -120,7 +124,7 @@ const getStatusClass = (status: string) => {
                 <span class="header-text">Nome do remédio</span>
               </div>
             </th>
-            <th class="pa-4" style="width: 2%; max-width: 2%"></th>
+            <th class="pa-4" style="width: 2%; max-width: 2%" />
             <th class="text-center pa-4" style="width: 19%; max-width: 19%;">
               <div class="d-flex align-center justify-center ga-2">
                 <span class="header-icon"><v-icon>mdi-check-circle-outline</v-icon></span>
@@ -146,17 +150,17 @@ const getStatusClass = (status: string) => {
 
             <td class="text-left pa-5">
               <div class="d-flex align-center">
-                <div class="vertical-divider"></div>
+                <div class="vertical-divider" />
                 <span class="medicine-name">{{ item.nome ?? '-' }}</span>
               </div>
             </td>
 
-            <td class="pa-5"></td>
+            <td class="pa-5" />
 
             <td class="text-center pa-5">
               <v-chip
-                :class="getStatusClass(item.status ?? '')"
                 class="status-chip"
+                :class="getStatusClass(item.status ?? '')"
                 size="small"
               >
                 {{ item.status ?? '—' }}
@@ -409,4 +413,3 @@ const getStatusClass = (status: string) => {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 </style>
-

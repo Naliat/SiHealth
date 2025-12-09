@@ -10,10 +10,15 @@ psycopg[binary]
 pydantic
 pydantic-settings
 email-validator
+python-dotenv
 
 # Segurança e Criptografia
 passlib[bcrypt]
+# Mantemos a versão 3.2.0 fixa para evitar incompatibilidade com passlib
 bcrypt==3.2.0
 
 # Utilitários para Upload/Forms (Geralmente necessário para login futuro)
 python-multipart
+
+# Geração de Relatórios e Documentos (PDF)
+reportlab>=4.0.0

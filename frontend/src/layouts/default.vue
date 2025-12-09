@@ -1,16 +1,16 @@
 <template>
   <v-app>
-    <SideBar/>
+    <SideBar />
     <v-main>
       <v-container class="pa-0" fluid>
-        <router-view/>
+        <router-view />
       </v-container>
     </v-main>
   </v-app>
 </template>
 
 <script lang="ts" setup>
-import SideBar from '@/components/layout/SideBar.vue'
+  import SideBar from '@/components/layout/SideBar.vue'
 </script>
 
 <style scoped>
