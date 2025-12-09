@@ -20,7 +20,7 @@
   ]
 
   const bottomItems: Partial<SideBarItem>[] = [
-    { title: 'Configurações', icon: 'mdi-cog', value: 'config' },
+    // { title: 'Configurações', icon: 'mdi-cog', value: 'config' },
     { title: 'Sair', icon: 'mdi-logout', value: 'sair' },
   ]
 </script>

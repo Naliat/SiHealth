@@ -5,7 +5,6 @@ import type {
   DashboardTopMedication,
 } from './dashboardService'
 import jsPDF from 'jspdf'
-
 import autoTable from 'jspdf-autotable'
 
 export interface RelatorioData {
@@ -16,18 +15,24 @@ export interface RelatorioData {
   baixaQuantidade: DashboardItemCritico[]
 }
 
-export function gerarRelatorioPDF (data: RelatorioData): void {
+// Função para converter hex -> RGB
+function hexToRgb(hex: string): number[] {
+  const bigint = parseInt(hex.replace('#', ''), 16)
+  return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255]
+}
+
+export function gerarRelatorioPDF(data: RelatorioData): void {
   const doc = new jsPDF()
 
   // Configuração de cores
-  const primaryColor = '#1976D2'
-  const textColor = '#333333'
+  const primaryColor = hexToRgb('#1976D2')
+  const textColor = hexToRgb('#333333')
 
   let yPosition = 20
 
   // Cabeçalho
   doc.setFontSize(22)
-  doc.setTextColor(primaryColor as any)
+  doc.setTextColor(...primaryColor)
   doc.text('Relatório de Dashboard - SiHealth', 14, yPosition)
 
   yPosition += 8
@@ -37,9 +42,9 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
 
   yPosition += 15
 
-  // Seção 1: Métricas principais (KPIs)
+  // Seção 1: Métricas principais
   doc.setFontSize(14)
-  doc.setTextColor(textColor as any)
+  doc.setTextColor(...textColor)
   doc.text('Métricas Principais', 14, yPosition)
 
   yPosition += 10
@@ -57,8 +62,8 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
     body: metricsData,
     theme: 'striped',
     headStyles: {
-      fillColor: primaryColor as any,
-      textColor: '#ffffff' as any,
+      fillColor: primaryColor,
+      textColor: [255, 255, 255],
       fontStyle: 'bold',
     },
     styles: {
@@ -76,7 +81,7 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
   // Seção 2: Medicamentos mais retirados
   if (data.topMedications.length > 0) {
     doc.setFontSize(14)
-    doc.setTextColor(textColor as any)
+    doc.setTextColor(...textColor)
     doc.text('Medicamentos Mais Retirados', 14, yPosition)
 
     yPosition += 5
@@ -92,8 +97,8 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
       body: topMedsData,
       theme: 'striped',
       headStyles: {
-        fillColor: primaryColor as any,
-        textColor: '#ffffff' as any,
+        fillColor: primaryColor,
+        textColor: [255, 255, 255],
         fontStyle: 'bold',
       },
       styles: {
@@ -109,7 +114,6 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
     yPosition = (doc as any).lastAutoTable.finalY + 15
   }
 
-  // Adicionar nova página se necessário
   if (yPosition > 240) {
     doc.addPage()
     yPosition = 20
@@ -118,7 +122,7 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
   // Seção 3: Dispensações por mês
   if (data.dispensacoesPorMes.length > 0) {
     doc.setFontSize(14)
-    doc.setTextColor(textColor as any)
+    doc.setTextColor(...textColor)
     doc.text('Frequência de Dispensações por Mês', 14, yPosition)
 
     yPosition += 5
@@ -134,8 +138,8 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
       body: dispData,
       theme: 'striped',
       headStyles: {
-        fillColor: primaryColor as any,
-        textColor: '#ffffff' as any,
+        fillColor: primaryColor,
+        textColor: [255, 255, 255],
         fontStyle: 'bold',
         halign: 'center',
       },
@@ -152,7 +156,6 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
     yPosition = (doc as any).lastAutoTable.finalY + 15
   }
 
-  // Adicionar nova página se necessário
   if (yPosition > 240) {
     doc.addPage()
     yPosition = 20
@@ -161,7 +164,7 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
   // Seção 4: Itens próximos ao vencimento
   if (data.proximosAVencer.length > 0) {
     doc.setFontSize(14)
-    doc.setTextColor(textColor as any)
+    doc.setTextColor(...textColor)
     doc.text('Itens Próximos ao Vencimento', 14, yPosition)
 
     yPosition += 5
@@ -179,8 +182,8 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
       body: proxVencData,
       theme: 'striped',
       headStyles: {
-        fillColor: primaryColor as any,
-        textColor: '#ffffff' as any,
+        fillColor: primaryColor,
+        textColor: [255, 255, 255],
         fontStyle: 'bold',
       },
       styles: {
@@ -194,15 +197,15 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
         3: { cellWidth: 35, halign: 'center' },
       },
       didParseCell: data => {
-        // Colorir células de status
         if (data.column.index === 3 && data.cell.section === 'body') {
           const status = data.cell.raw as string
+
           if (status === 'Vencido') {
-            (data.cell.styles as any).fillColor = '#fee2e2'
-            (data.cell.styles as any).textColor = '#b91c1c'
+            data.cell.styles.fillColor = [254, 226, 226] // #fee2e2
+            data.cell.styles.textColor = [185, 28, 28]   // #b91c1c
           } else if (status === 'Próx. Venc.') {
-            (data.cell.styles as any).fillColor = '#fef3c7'
-            (data.cell.styles as any).textColor = '#b45309'
+            data.cell.styles.fillColor = [254, 243, 199] // #fef3c7
+            data.cell.styles.textColor = [180, 83, 9]    // #b45309
           }
         }
       },
@@ -211,7 +214,6 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
     yPosition = (doc as any).lastAutoTable.finalY + 15
   }
 
-  // Adicionar nova página se necessário
   if (yPosition > 240) {
     doc.addPage()
     yPosition = 20
@@ -220,7 +222,7 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
   // Seção 5: Itens com baixa quantidade
   if (data.baixaQuantidade.length > 0) {
     doc.setFontSize(14)
-    doc.setTextColor(textColor as any)
+    doc.setTextColor(...textColor)
     doc.text('Itens com Baixa Quantidade', 14, yPosition)
 
     yPosition += 5
@@ -237,8 +239,8 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
       body: baixaQtdData,
       theme: 'striped',
       headStyles: {
-        fillColor: primaryColor as any,
-        textColor: '#ffffff' as any,
+        fillColor: primaryColor,
+        textColor: [255, 255, 255],
         fontStyle: 'bold',
       },
       styles: {
@@ -253,7 +255,7 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
     })
   }
 
-  // Rodapé em todas as páginas
+  // Rodapé
   const pageCount = doc.getNumberOfPages()
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i)
@@ -272,7 +274,7 @@ export function gerarRelatorioPDF (data: RelatorioData): void {
     )
   }
 
-  // Salvar o PDF
+  // Salvar
   const dataAtual = new Date().toISOString().split('T')[0]
   doc.save(`relatorio-dashboard-${dataAtual}.pdf`)
 }
