@@ -3,7 +3,6 @@
   import { registrarEntrada } from '@/services/movimentacaoService'
 
   const form = reactive({
-    // Use loteId (numeric) to match backend expectation for id_lote
     loteId: '' as string | number,
     codigo: '',
     nome: '',
@@ -31,7 +30,7 @@
     message: null as string | null,
   })
 
-  const idUsuarioResponsavel = 1 // temporário, conforme frontend existente
+  const idUsuarioResponsavel = 1 
 
   const quantidadeTotal = computed(() => {
     const caixas = Number(form.caixas) || 0

@@ -1,3 +1,114 @@
+<script lang="ts" setup>
+import { computed, ref, onMounted } from 'vue'
+import { format } from 'date-fns'
+
+import { 
+    getDashboardResumo 
+} from '@/services/dashboardService' 
+import { 
+    baixarRelatorioGeral
+} from '@/services/relatorioService' 
+
+import type { 
+    DashboardMetrics, 
+    DashboardTopMedication, 
+    DashboardDispensacaoPorMes,
+    DashboardItemCritico
+} from '@/services/dashboardService' 
+
+import BarChart from '@/components/BarChart.vue' 
+import LineChart from '@/components/LineChart.vue'
+
+const loading = ref(true)
+const errorMessage = ref<string | null>(null)
+
+const metrics = ref<DashboardMetrics | null>(null)
+const topMedications = ref<DashboardTopMedication[]>([])
+const dispensacoesPorMes = ref<DashboardDispensacaoPorMes[]>([])
+const proximosAVencer = ref<DashboardItemCritico[]>([])
+const baixaQuantidade = ref<DashboardItemCritico[]>([])
+
+const barChartData = computed(() => {
+    return topMedications.value.map(item => ({
+        label: item.nome,
+        value: (
+            typeof item.quantidade === 'number' && !isNaN(item.quantidade) ? item.quantidade : 0
+        )
+    }))
+})
+
+const lineChartData = computed(() => {
+    const dataValues = dispensacoesPorMes.value.map(item => (
+        typeof item.quantidade === 'number' && !isNaN(item.quantidade) ? item.quantidade : 0
+    ));
+
+    return {
+        labels: dispensacoesPorMes.value.map(item => item.mes),
+        datasets: [{
+            data: dataValues,
+            label: "Dispensações" 
+        }]
+    }
+})
+
+
+function getStatusChipClass (status: string): string {
+  switch (status) {
+    case 'Vencido': {
+      return 'status-chip status-expired'
+    }
+    case 'Próx. Venc.': {
+      return 'status-chip status-warning'
+    }
+    default: {
+      return 'status-chip status-ok'
+    }
+  }
+}
+async function handleGerarRelatorio (): Promise<void> {
+    if (loading.value) return; 
+
+    const hoje = new Date();
+    const trintaDiasAtras = new Date(hoje.setDate(hoje.getDate() - 30));
+    
+    const dataInicio = format(trintaDiasAtras, 'yyyy-MM-dd');
+    const dataFim = format(new Date(), 'yyyy-MM-dd');
+
+    try {
+      errorMessage.value = null;
+      console.log(`Solicitando relatório geral de ${dataInicio} até ${dataFim}...`);
+      
+      await baixarRelatorioGeral(dataInicio, dataFim);
+      
+      errorMessage.value = `Relatório PDF de ${dataInicio} a ${dataFim} gerado com sucesso!`;
+
+    } catch (error: any) {
+      console.error('Erro ao gerar relatório FastAPI', error);
+      errorMessage.value = `Falha ao gerar o relatório. Status: ${error.status || 'Erro de rede'}.`;
+    }
+  }
+
+
+onMounted(async () => {
+  try {
+    const response = await getDashboardResumo()
+    
+    console.log('Resposta do Dashboard (Inspeção):', response) 
+    
+    metrics.value = response.metrics
+    topMedications.value = response.topMedications
+    dispensacoesPorMes.value = response.dispensacoesPorMes
+    proximosAVencer.value = response.proximosAVencer
+    baixaQuantidade.value = response.baixaQuantidade
+  } catch (error: any) {
+    console.error('Erro ao carregar dashboard', error)
+    errorMessage.value = `Erro de Conexão. Não foi possível carregar os dados. Verifique se o servidor está ativo. Detalhe: ${error.message || 'Erro de rede.'}`
+  } finally {
+    loading.value = false
+  }
+})
+</script>
+
 <template>
   <v-container class="page-container pa-10 bg-gradient" fluid>
     <div class="d-flex justify-space-between align-start mb-10 flex-wrap ga-6">
@@ -5,7 +116,7 @@
         <h1 class="text-h3 font-weight-bold text-slate-900 mb-2">Dashboard</h1>
         <p class="text-h6 text-slate-600">Visão geral do estoque e dispensações</p>
       </div>
-      <div class="d-flex align-center ga-4">
+      <div class="d-flex justify-space-between align-center ga-4">
         <v-btn
           class="report-btn"
           color="primary"
@@ -48,11 +159,11 @@
       <v-col cols="12" md="3" sm="6">
         <v-card class="kpi-card kpi-low-stock" elevation="2" rounded="xl">
           <div class="kpi-icon">
-            <v-icon>mdi-cube-outline</v-icon>
+            <v-icon size="24">mdi-cube-send</v-icon>
           </div>
           <div class="kpi-content">
-            <span class="kpi-label">Itens com Baixo Estoque</span>
-            <span class="kpi-value">{{ metrics?.lowStockItems ?? 0 }}</span>
+            <span class="kpi-value text-red-darken-3">{{ metrics?.lowStockItems ?? 0 }}</span>
+            <span class="kpi-label text-red-darken-3">Itens com Baixo Estoque</span>
           </div>
         </v-card>
       </v-col>
@@ -60,11 +171,11 @@
       <v-col cols="12" md="3" sm="6">
         <v-card class="kpi-card kpi-near-expiry" elevation="2" rounded="xl">
           <div class="kpi-icon">
-            <v-icon>mdi-timer-sand</v-icon>
+            <v-icon size="24">mdi-timer-sand</v-icon>
           </div>
           <div class="kpi-content">
-            <span class="kpi-label">Itens Próx. Venc.</span>
-            <span class="kpi-value">{{ metrics?.nearExpiryItems ?? 0 }}</span>
+            <span class="kpi-value text-amber-darken-3">{{ metrics?.nearExpiryItems ?? 0 }}</span>
+            <span class="kpi-label text-amber-darken-3">Itens Próx. Venc.</span>
           </div>
         </v-card>
       </v-col>
@@ -72,11 +183,11 @@
       <v-col cols="12" md="3" sm="6">
         <v-card class="kpi-card kpi-total-stock" elevation="2" rounded="xl">
           <div class="kpi-icon">
-            <v-icon>mdi-archive-outline</v-icon>
+            <v-icon size="24">mdi-archive-outline</v-icon>
           </div>
           <div class="kpi-content">
-            <span class="kpi-label">Itens em Estoque</span>
-            <span class="kpi-value">{{ metrics?.totalStockItems ?? 0 }}</span>
+            <span class="kpi-value text-blue-darken-3">{{ metrics?.totalStockItems ?? 0 }}</span>
+            <span class="kpi-label text-blue-darken-3">Itens em Estoque</span>
           </div>
         </v-card>
       </v-col>
@@ -84,11 +195,11 @@
       <v-col cols="12" md="3" sm="6">
         <v-card class="kpi-card kpi-monthly-disp" elevation="2" rounded="xl">
           <div class="kpi-icon">
-            <v-icon>mdi-check-circle-outline</v-icon>
+            <v-icon size="24">mdi-pill</v-icon>
           </div>
           <div class="kpi-content">
-            <span class="kpi-label">Dispensações Mensais</span>
-            <span class="kpi-value">{{ metrics?.monthlyDispensations ?? 0 }}</span>
+            <span class="kpi-value text-green-darken-3">{{ metrics?.monthlyDispensations ?? 0 }}</span>
+            <span class="kpi-label text-green-darken-3">Dispensações Mensais</span>
           </div>
         </v-card>
       </v-col>
@@ -111,23 +222,15 @@
             </div>
           </div>
 
-          <div class="top-meds-list">
-            <div
-              v-for="med in topMedications"
-              :key="med.nome"
-              class="top-med-row d-flex align-center mb-3"
-            >
-              <div class="top-med-name">{{ med.nome }}</div>
-              <div class="top-med-bar-wrapper">
-                <div
-                  class="top-med-bar"
-                  :style="{ width: `${maxTopMedication > 0 ? (med.quantidade / maxTopMedication) * 100 : 0}%` }"
-                />
-              </div>
-              <span class="top-med-value">{{ med.quantidade }}</span>
-            </div>
+          <div v-if="loading" class="text-center text-slate-500">Carregando dados...</div>
+          <div v-else-if="barChartData.length === 0" class="text-center text-slate-500">Nenhum dado de retirada disponível.</div>
+          <div 
+            v-else 
+            :style="{ height: '250px', overflowY: 'auto', paddingRight: '10px' }"
+          >
+             <BarChart :data="barChartData" />
           </div>
-        </v-card>
+          </v-card>
       </v-col>
 
       <v-col cols="12" md="6">
@@ -146,31 +249,15 @@
             </div>
           </div>
 
-          <div class="chart-placeholder">
-            <svg class="chart-svg" viewBox="0 0 100 40">
-              <polyline
-                fill="none"
-                :points="chartPoints"
-                stroke="#22c55e"
-                stroke-width="2"
-              />
-            </svg>
-            <div class="chart-footer d-flex justify-space-between mt-2 text-caption text-slate-500">
-              <span>Jan</span>
-              <span>Fev</span>
-              <span>Mar</span>
-              <span>Abr</span>
-              <span>Mai</span>
-              <span>Jun</span>
-              <span>Jul</span>
-              <span>Ago</span>
-              <span>Set</span>
-              <span>Out</span>
-              <span>Nov</span>
-              <span>Dez</span>
-            </div>
+          <div v-if="loading" class="text-center text-slate-500">Carregando dados...</div>
+          <div v-else-if="lineChartData.datasets[0].data.length === 0" class="chart-wrapper text-center text-slate-500">Dados de frequência indisponíveis.</div>
+          <div v-else class="chart-wrapper">
+             <LineChart 
+                :data="lineChartData.datasets" 
+                :labels="lineChartData.labels" 
+             />
           </div>
-        </v-card>
+          </v-card>
       </v-col>
     </v-row>
 
@@ -190,7 +277,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="proximosAVencer.length === 0">
+              <tr v-if="proximosAVencer.length === 0 && !loading">
                 <td class="text-center text-slate-500" colspan="4">
                   Nenhum item próximo do vencimento.
                 </td>
@@ -207,7 +294,7 @@
                   <v-chip :class="getStatusChipClass(item.status)" size="small">
                     {{ item.status }}
                   </v-chip>
-                </td>></tr>
+                </td></tr>
             </tbody>
           </v-table>
         </v-card>
@@ -227,7 +314,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-if="baixaQuantidade.length === 0">
+              <tr v-if="baixaQuantidade.length === 0 && !loading">
                 <td class="text-center text-slate-500" colspan="3">
                   Nenhum item com baixa quantidade.
                 </td>
@@ -254,97 +341,6 @@
   </v-container>
 </template>
 
-<script lang="ts" setup>
-  import { computed, onMounted, ref } from 'vue'
-
-  import {
-    type DashboardDispensacaoPorMes,
-    type DashboardItemCritico,
-    type DashboardMetrics,
-    type DashboardTopMedication,
-    getDashboardResumo,
-  } from '@/services/dashboardService'
-  import { gerarRelatorioPDF } from '@/services/relatorioService'
-
-  const loading = ref(true)
-  const errorMessage = ref<string | null>(null)
-
-  const metrics = ref<DashboardMetrics | null>(null)
-  const topMedications = ref<DashboardTopMedication[]>([])
-  const dispensacoesPorMes = ref<DashboardDispensacaoPorMes[]>([])
-  const proximosAVencer = ref<DashboardItemCritico[]>([])
-  const baixaQuantidade = ref<DashboardItemCritico[]>([])
-
-  const maxTopMedication = computed(() => {
-    if (topMedications.value.length === 0) return 0
-    return Math.max(...topMedications.value.map(m => m.quantidade))
-  })
-
-  const chartPoints = computed(() => {
-    if (dispensacoesPorMes.value.length === 0) return ''
-
-    const maxQty = Math.max(...dispensacoesPorMes.value.map(item => item.quantidade), 1)
-
-    return dispensacoesPorMes.value
-      .map((p, idx, arr) => {
-        const x = (idx / Math.max(arr.length - 1, 1)) * 100
-        const y = 40 - (p.quantidade / maxQty) * 35
-        return `${x},${y}`
-      })
-      .join(' ')
-  })
-
-  onMounted(async () => {
-    try {
-      const response = await getDashboardResumo()
-      metrics.value = response.metrics
-      topMedications.value = response.topMedications
-      dispensacoesPorMes.value = response.dispensacoesPorMes
-      proximosAVencer.value = response.proximosAVencer
-      baixaQuantidade.value = response.baixaQuantidade
-    } catch (error: any) {
-      console.error('Erro ao carregar dashboard', error)
-      errorMessage.value = 'Não foi possível carregar os dados do dashboard.'
-    } finally {
-      loading.value = false
-    }
-  })
-
-  function getStatusChipClass (status: string): string {
-    switch (status) {
-      case 'Vencido': {
-        return 'status-chip status-expired'
-      }
-      case 'Próx. Venc.': {
-        return 'status-chip status-warning'
-      }
-      default: {
-        return 'status-chip status-ok'
-      }
-    }
-  }
-
-  function handleGerarRelatorio (): void {
-    if (!metrics.value) {
-      errorMessage.value = 'Não há dados disponíveis para gerar o relatório.'
-      return
-    }
-
-    try {
-      gerarRelatorioPDF({
-        metrics: metrics.value,
-        topMedications: topMedications.value,
-        dispensacoesPorMes: dispensacoesPorMes.value,
-        proximosAVencer: proximosAVencer.value,
-        baixaQuantidade: baixaQuantidade.value,
-      })
-    } catch (error: any) {
-      console.error('Erro ao gerar relatório', error)
-      errorMessage.value = 'Erro ao gerar o relatório. Tente novamente.'
-    }
-  }
-</script>
-
 <style scoped>
 .bg-gradient {
   background: #e5edf5;
@@ -352,15 +348,15 @@
 }
 
 .text-slate-900 {
-  color: #0f172a;
+  color: #1a202c;
 }
 
 .text-slate-600 {
-  color: #475569;
+  color: #4a5568;
 }
 
 .text-slate-500 {
-  color: #64748b;
+  color: #718096;
 }
 
 .user-btn {
@@ -407,49 +403,49 @@
 }
 
 .kpi-label {
-  font-size: 0.9rem;
-  color: var(--slate-600);
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .kpi-value {
   font-size: 2rem;
-  font-weight: 700;
-  color: var(--slate-900);
+  font-weight: 800;
 }
 
 .kpi-low-stock {
-  background: #fecaca;
+  background: #fef2f2;
 }
 
 .kpi-near-expiry {
-  background: #fde68a;
+  background: #fefce8;
 }
 
 .kpi-total-stock {
-  background: #e5f0ff;
+  background: #ebf4ff;
 }
 
 .kpi-monthly-disp {
-  background: #bbf7d0;
+  background: #d1fae5;
 }
 
 .panel-card {
   padding: 20px 24px 24px;
   min-height: 100%;
   border-radius: 18px;
-  border: 1px solid var(--slate-200);
-  background: #f9fbff;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
 }
 
 .panel-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--slate-900);
+  color: #1a202c;
 }
 
 .panel-subtitle {
   font-size: 0.9rem;
-  color: var(--slate-500);
+  color: #718096;
+  margin-top: -2px;
 }
 
 .sort-btn {
@@ -459,57 +455,11 @@
   border-color: var(--slate-300) !important;
 }
 
-.top-meds-list {
-  margin-top: 8px;
+.chart-wrapper {
+    position: relative;
+    height: 250px; 
 }
 
-.top-med-row {
-  gap: 12px;
-  display: flex;
-  align-items: center;
-}
-
-.top-med-name {
-  font-size: 0.9rem;
-  color: var(--slate-900);
-  min-width: 140px;
-  max-width: 140px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.top-med-bar-wrapper {
-  flex: 1;
-  height: 8px;
-  border-radius: 999px;
-  background-color: #e5e7eb;
-  overflow: hidden;
-}
-
-.top-med-bar {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #93c5fd, #22c55e);
-  transition: width 0.3s ease;
-}
-
-.top-med-value {
-  font-size: 0.75rem;
-  color: var(--slate-500);
-  min-width: 40px;
-  text-align: right;
-  font-weight: 600;
-}
-
-.chart-placeholder {
-  margin-top: 4px;
-}
-
-.chart-svg {
-  width: 100%;
-  height: 190px;
-}
 
 .compact-table {
   border-radius: 18px;
@@ -538,11 +488,12 @@
 .status-chip {
   font-size: 0.75rem;
   font-weight: 500;
+  height: 24px;
 }
 
-.status-ok {
-  background-color: #dcfce7 !important;
-  color: #15803d !important;
+.status-expired {
+  background-color: #fee2e2 !important;
+  color: #b91c1c !important;
 }
 
 .status-warning {
@@ -550,9 +501,9 @@
   color: #b45309 !important;
 }
 
-.status-expired {
-  background-color: #fee2e2 !important;
-  color: #b91c1c !important;
+.status-ok {
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
 }
 
 .dot {

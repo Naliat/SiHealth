@@ -3,7 +3,7 @@ import { ref, watch, onMounted } from 'vue'
 
 const API_BASE_URL = 'http://127.0.0.1:8000/api/v1/medicamentos';
 const API_TIMEOUT = 5000;
-const SYSTEM_SECRET_PASSWORD = import.meta.env.VITE_MASTER_PASSWORD || ''; 
+const SYSTEM_SECRET_PASSWORD = import.meta.env.VITE_MASTER_PASSWORD || 'admin_ubs_2025'; 
 
 interface Medicamento {
     id_medicamento: number;

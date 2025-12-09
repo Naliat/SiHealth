@@ -4,7 +4,7 @@ import {reactive, ref, watch, onMounted} from 'vue'
 const API_BASE_URL = 'http://127.0.0.1:8000/api/v1/lotes';
 const API_MEDICAMENTO_URL = 'http://127.0.0.1:8000/api/v1/medicamentos';
 const API_TIMEOUT = 5000;
-const SYSTEM_SECRET_PASSWORD = import.meta.env.VITE_MASTER_PASSWORD || ''; 
+const SYSTEM_SECRET_PASSWORD = import.meta.env.VITE_MASTER_PASSWORD || 'admin_ubs_2025'; 
 
 interface MedicamentoDetalhe {
     id_medicamento: number;
@@ -216,11 +216,7 @@ const fetchItems = async () => {
     
     const params = new URLSearchParams();
     
-    const limit = options.value.itemsPerPage || MAX_ITEMS_PER_PAGE;
-    const skip = (options.value.page - 1) * limit;
 
-    params.append('skip', String(skip));
-    params.append('limit', String(limit));
     
     if (options.value.search) { 
         params.append('numero_lote', options.value.search);
