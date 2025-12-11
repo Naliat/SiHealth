@@ -123,7 +123,7 @@ const snackbarColor = ref('success')
 
 const loteNumero = ref('')
 const loteFabricante = ref('')
-const loteRegistroMS = ref('')
+const loteRegistroMS = ref('') // Registro MS
 const loteValidade = ref(new Date().toISOString().substring(0, 10))
 const loteCaixas = ref(1)
 const loteQuantidadeUnidades = ref(1)
@@ -216,10 +216,8 @@ const fetchItems = async () => {
     
     const params = new URLSearchParams();
     
-
-    
+    // CORREÇÃO: Filtra APENAS pelo nome do medicamento
     if (options.value.search) { 
-        params.append('numero_lote', options.value.search);
         params.append('medicamento', options.value.search); 
     }
 
@@ -270,6 +268,7 @@ interface LoteCreate {
     quantidade_por_caixa: number;
     quantidade_inicial: number;
     numero_caixa: string;
+    registro_ms?: string; // Adicionado Registro MS
 }
 
 const criarLote = async (masterPass: string) => {
@@ -286,6 +285,7 @@ const criarLote = async (masterPass: string) => {
         quantidade_por_caixa: loteQuantidadeUnidades.value,
         quantidade_inicial: loteCaixas.value * loteQuantidadeUnidades.value,
         numero_caixa: String(loteCaixas.value),
+        registro_ms: loteRegistroMS.value, // Enviando Registro MS
     };
 
     try {
@@ -745,7 +745,7 @@ watch([options], () => {
             <th class="text-center pa-4" style="width: 10%; max-width: 10%;">
               <div class="d-flex align-center justify-center ga-2">
                 <span class="header-icon">#</span>
-                <span class="header-text">Número</span>
+                <span class="header-text">Número</span> 
               </div>
             </th>
             <th class="text-left pa-4" style="width: 50%; max-width: 50%;">
@@ -770,12 +770,13 @@ watch([options], () => {
           </tr>
         </template>
 
-        <template #item="{ item }">
+        <template #item="{ item, index }"> <!-- Adicionado 'index' aqui -->
 
           <tr class="table-row">
             <td class="text-center pa-5">
+              <!-- CORRIGIDO: Agora usa o índice local (começando em 1) -->
               <div class="number-badge">
-                {{ item.id_lote ?? item.id_medicamento ?? '-' }}
+                {{ index + 1 }} 
               </div>
             </td>
 

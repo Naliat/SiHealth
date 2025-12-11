@@ -444,6 +444,9 @@ watch([options, filterTarja], () => {
             <v-list-item @click="options.sortBy = [{ key: 'criado_em', order: 'desc' }]; displaySort = 'Data de Criação'">
               <v-list-item-title>Data de Criação</v-list-item-title>
             </v-list-item>
+            <v-list-item @click="options.sortBy = [{ key: 'tarja', order: 'asc' }]; displaySort = 'Tarja'">
+              <v-list-item-title>Tarja</v-list-item-title>
+            </v-list-item>
           </v-list>
         </v-menu>
       </div>
@@ -466,7 +469,7 @@ watch([options, filterTarja], () => {
             <th class="text-center pa-4" style="width: 10%; max-width: 10%;">
               <div class="d-flex align-center justify-center ga-2">
                 <span class="header-icon">#</span>
-                <span class="header-text">ID</span>
+                <span class="header-text">Nº</span> <!-- Simplificado para Nº -->
               </div>
             </th>
             <th class="text-left pa-4" style="width: 90%; max-width: 90%;">
@@ -478,11 +481,12 @@ watch([options, filterTarja], () => {
           </tr>
         </template>
 
-        <template #item="{ item }">
+        <template #item="{ item, index }"> <!-- Adicionado 'index' aqui -->
           <tr class="table-row">
             <td class="text-center pa-5">
+              <!-- CORRIGIDO: Agora usa o índice local (começando em 1) -->
               <div class="number-badge">
-                {{ item.id_medicamento }}
+                {{ (options.page - 1) * options.itemsPerPage + index + 1 }}
               </div>
             </td>
 
