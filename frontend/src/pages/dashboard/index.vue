@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed, ref, onMounted } from 'vue'
-import { format } from 'date-fns'
+import { format, subDays } from 'date-fns' // Importei subDays para a data inicial padrão
 
 import { 
     getDashboardResumo 
@@ -19,6 +19,7 @@ import type {
 import BarChart from '@/components/BarChart.vue' 
 import LineChart from '@/components/LineChart.vue'
 
+// --- Estado do Dashboard ---
 const loading = ref(true)
 const errorMessage = ref<string | null>(null)
 
@@ -27,6 +28,52 @@ const topMedications = ref<DashboardTopMedication[]>([])
 const dispensacoesPorMes = ref<DashboardDispensacaoPorMes[]>([])
 const proximosAVencer = ref<DashboardItemCritico[]>([])
 const baixaQuantidade = ref<DashboardItemCritico[]>([])
+
+const showReportDialog = ref(false)
+const reportStartDate = ref<string | null>(null) 
+const reportEndDate = ref<string | null>(null)   
+
+function setDefaultReportDates() {
+    const hoje = new Date()
+    const trintaDiasAtras = subDays(hoje, 30) 
+    
+    reportEndDate.value = format(hoje, 'yyyy-MM-dd')
+    reportStartDate.value = format(trintaDiasAtras, 'yyyy-MM-dd')
+}
+
+function openReportDialog(): void {
+    setDefaultReportDates()
+    showReportDialog.value = true
+}
+
+function cancelReportGeneration(): void {
+    showReportDialog.value = false
+    errorMessage.value = null
+}
+
+async function confirmReportGeneration (): Promise<void> {
+    if (loading.value || !reportStartDate.value || !reportEndDate.value) return; 
+
+    showReportDialog.value = false; 
+    const dataInicio = reportStartDate.value;
+    const dataFim = reportEndDate.value;
+
+    try {
+      errorMessage.value = null;
+      loading.value = true; 
+      console.log(`Solicitando relatório geral de ${dataInicio} até ${dataFim}...`);
+      
+      await baixarRelatorioGeral(dataInicio, dataFim);
+      
+      errorMessage.value = `Relatório PDF de ${dataInicio} a ${dataFim} gerado com sucesso!`;
+
+    } catch (error: any) {
+      console.error('Erro ao gerar relatório FastAPI', error);
+      errorMessage.value = `Falha ao gerar o relatório. Status: ${error.status || 'Erro de rede'}.`;
+    } finally {
+        loading.value = false; 
+    }
+}
 
 const barChartData = computed(() => {
     return topMedications.value.map(item => ({
@@ -65,28 +112,6 @@ function getStatusChipClass (status: string): string {
     }
   }
 }
-async function handleGerarRelatorio (): Promise<void> {
-    if (loading.value) return; 
-
-    const hoje = new Date();
-    const trintaDiasAtras = new Date(hoje.setDate(hoje.getDate() - 30));
-    
-    const dataInicio = format(trintaDiasAtras, 'yyyy-MM-dd');
-    const dataFim = format(new Date(), 'yyyy-MM-dd');
-
-    try {
-      errorMessage.value = null;
-      console.log(`Solicitando relatório geral de ${dataInicio} até ${dataFim}...`);
-      
-      await baixarRelatorioGeral(dataInicio, dataFim);
-      
-      errorMessage.value = `Relatório PDF de ${dataInicio} a ${dataFim} gerado com sucesso!`;
-
-    } catch (error: any) {
-      console.error('Erro ao gerar relatório FastAPI', error);
-      errorMessage.value = `Falha ao gerar o relatório. Status: ${error.status || 'Erro de rede'}.`;
-    }
-  }
 
 
 onMounted(async () => {
@@ -111,6 +136,68 @@ onMounted(async () => {
 
 <template>
   <v-container class="page-container pa-10 bg-gradient" fluid>
+    <v-dialog 
+        v-model="showReportDialog" 
+        max-width="450"
+        persistent
+    >
+      <v-card class="pa-6 rounded-xl report-dialog-card">
+        <v-card-title class="text-h4 font-weight-bold text-center mb-2">
+          Período do Relatório
+        </v-card-title>
+        <v-card-subtitle class="text-center text-body-1 text-slate-600 mb-6">
+          Selecione o período que deseja o relatório
+        </v-card-subtitle>
+        
+        <div class="d-flex flex-column ga-4 mb-6">
+          <v-text-field
+            v-model="reportStartDate"
+            label="Per. Inicial"
+            prepend-inner-icon="mdi-calendar"
+            type="date"
+            variant="outlined"
+            density="compact"
+            class="report-date-field"
+            hide-details
+          ></v-text-field>
+
+          <v-text-field
+            v-model="reportEndDate"
+            label="Per. Final"
+            prepend-inner-icon="mdi-calendar"
+            type="date"
+            variant="outlined"
+            density="compact"
+            class="report-date-field"
+            hide-details
+          ></v-text-field>
+        </div>
+
+        <v-card-actions class="pa-0 d-flex justify-space-between ga-4">
+          <v-btn
+            class="flex-grow-1"
+            color="red-darken-1"
+            variant="flat"
+            rounded="xl"
+            height="48"
+            @click="cancelReportGeneration"
+          >
+            Cancelar
+          </v-btn>
+          <v-btn
+            class="flex-grow-1"
+            color="primary"
+            variant="flat"
+            rounded="xl"
+            height="48"
+            :disabled="!reportStartDate || !reportEndDate"
+            @click="confirmReportGeneration"
+          >
+            Concluir
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <div class="d-flex justify-space-between align-start mb-10 flex-wrap ga-6">
       <div>
         <h1 class="text-h3 font-weight-bold text-slate-900 mb-2">Dashboard</h1>
@@ -124,8 +211,7 @@ onMounted(async () => {
           height="44"
           rounded="xl"
           variant="flat"
-          @click="handleGerarRelatorio"
-        >
+          @click="openReportDialog" >
           <v-icon start>mdi-file-chart</v-icon>
           Gerar relatório
         </v-btn>
@@ -240,7 +326,8 @@ onMounted(async () => {
               <h2 class="panel-title">Freq. de dispensações</h2>
               <p class="panel-subtitle">Resumo por mês</p>
             </div>
-            <div class="d-flex align-center ga-2 text-slate-600 text-body-2">
+            <div class="d-flex align-center ga-2 text-sla
+te-600 text-body-2">
               <span>sort:</span>
               <v-btn class="sort-btn" size="small" variant="outlined">
                 2025
@@ -521,4 +608,39 @@ onMounted(async () => {
     margin-bottom: 8px;
   }
 }
+
+
+.report-dialog-card {
+    background: #f9f9f9;
+}
+
+.report-dialog-card .v-card-title {
+    color: #1a202c; 
+    font-size: 1.8rem !important; 
+    margin-bottom: 12px;
+}
+
+.report-date-field {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.report-date-field .v-input__control {
+    border-radius: 8px;
+}
+
+.v-card-actions .v-btn[color="red-darken-1"] {
+    background-color: #a94442 !important; 
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.v-card-actions .v-btn[color="primary"] {
+    background-color: #556b82 !important; 
+    color: white !important;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
 </style>
