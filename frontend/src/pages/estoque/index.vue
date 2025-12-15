@@ -4,7 +4,7 @@ import {reactive, ref, watch, onMounted} from 'vue'
 const API_BASE_URL = 'http://127.0.0.1:8000/api/v1/lotes';
 const API_MEDICAMENTO_URL = 'http://127.0.0.1:8000/api/v1/medicamentos';
 const API_TIMEOUT = 5000;
-const SYSTEM_SECRET_PASSWORD = import.meta.env.VITE_MASTER_PASSWORD || ''; 
+const SYSTEM_SECRET_PASSWORD = import.meta.env.VITE_MASTER_PASSWORD || 'admin_ubs_2025'; 
 
 interface MedicamentoDetalhe {
     id_medicamento: number;
@@ -123,7 +123,7 @@ const snackbarColor = ref('success')
 
 const loteNumero = ref('')
 const loteFabricante = ref('')
-const loteRegistroMS = ref('')
+const loteRegistroMS = ref('') // Registro MS
 const loteValidade = ref(new Date().toISOString().substring(0, 10))
 const loteCaixas = ref(1)
 const loteQuantidadeUnidades = ref(1)
@@ -216,14 +216,8 @@ const fetchItems = async () => {
     
     const params = new URLSearchParams();
     
-    const limit = options.value.itemsPerPage || MAX_ITEMS_PER_PAGE;
-    const skip = (options.value.page - 1) * limit;
-
-    params.append('skip', String(skip));
-    params.append('limit', String(limit));
-    
+    // CORREÇÃO: Filtra APENAS pelo nome do medicamento
     if (options.value.search) { 
-        params.append('numero_lote', options.value.search);
         params.append('medicamento', options.value.search); 
     }
 
@@ -274,6 +268,7 @@ interface LoteCreate {
     quantidade_por_caixa: number;
     quantidade_inicial: number;
     numero_caixa: string;
+    registro_ms?: string; // Adicionado Registro MS
 }
 
 const criarLote = async (masterPass: string) => {
@@ -290,6 +285,7 @@ const criarLote = async (masterPass: string) => {
         quantidade_por_caixa: loteQuantidadeUnidades.value,
         quantidade_inicial: loteCaixas.value * loteQuantidadeUnidades.value,
         numero_caixa: String(loteCaixas.value),
+        registro_ms: loteRegistroMS.value, // Enviando Registro MS
     };
 
     try {
@@ -749,7 +745,7 @@ watch([options], () => {
             <th class="text-center pa-4" style="width: 10%; max-width: 10%;">
               <div class="d-flex align-center justify-center ga-2">
                 <span class="header-icon">#</span>
-                <span class="header-text">Número</span>
+                <span class="header-text">Número</span> 
               </div>
             </th>
             <th class="text-left pa-4" style="width: 50%; max-width: 50%;">
@@ -774,12 +770,13 @@ watch([options], () => {
           </tr>
         </template>
 
-        <template #item="{ item }">
+        <template #item="{ item, index }"> <!-- Adicionado 'index' aqui -->
 
           <tr class="table-row">
             <td class="text-center pa-5">
+              <!-- CORRIGIDO: Agora usa o índice local (começando em 1) -->
               <div class="number-badge">
-                {{ item.id_lote ?? item.id_medicamento ?? '-' }}
+                {{ index + 1 }} 
               </div>
             </td>
 

@@ -46,7 +46,7 @@ class LoteResponse(LoteBase):
     def status(self) -> str:
         hoje = date.today()
         alerta = timedelta(days=30)
-        if self.data_validade < hoje:
+        if self.data_validade <= hoje:
             return "Vencido"
         elif self.data_validade <= (hoje + alerta):
             return "Próx. Venc."
