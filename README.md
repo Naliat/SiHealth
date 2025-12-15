@@ -1,6 +1,10 @@
 ### Demo
 [sihealth.netlify.app](https://sihealth.netlify.app/)
 
+## Prototipação
+
+[Protótipo do Figma](https://www.figma.com/design/pKAobTKfXAHKnxdDITKhxo/Telas-Primciapis?node-id=0-1&t=KNkqDQB5BuBcFDio-1)
+
 ## 📌 Roadmap do Projeto
 
 ```mermaid
