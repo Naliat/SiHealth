@@ -19,13 +19,13 @@ from app.models.saida import Saida
 db = SessionLocal()
 
 def seed_data():
-    print("🌱 Iniciando Seed Completo (Testar API Inteira)...")
+    print("🌱 Iniciando Seed Completo (Estrutura Normalizada)...")
 
     # ==============================================================================
-    # 1. MEDICAMENTOS (BASE)
-    # Apenas identidade do remédio. Detalhes físicos vão no lote.
+    # 1. MEDICAMENTOS (BASE GENÉRICA)
+    # Apenas identidade do remédio.
     # ==============================================================================
-    print("💊 Criando Medicamentos Genéricos...")
+    print("💊 Criando Catálogo de Medicamentos Genéricos...")
     
     lista_base = [
         {"nome": "Dipirona Monohidratada", "principio": "Dipirona", "tarja": "Sem Tarja"},
@@ -58,13 +58,13 @@ def seed_data():
         ids_meds[m["nome"]] = med.id_medicamento
 
     # ==============================================================================
-    # 2. LOTES (ESTOQUE)
+    # 2. LOTES (ESTOQUE DETALHADO)
     # Aqui definimos Fabricante, Dosagem, Validade e Cenários de Alerta
     # ==============================================================================
-    print("📦 Criando Lotes (Cenários para Dashboard)...")
+    print("📦 Criando Lotes com Detalhes (Cenários Dashboard)...")
     hoje = date.today()
     
-    # Lista para guardar lotes que podem ter saídas (não vencidos/zerados)
+    # Lista para guardar lotes válidos para gerar saídas depois
     lotes_disponiveis = []
 
     def criar_lote(nome_med, fab, dosagem, cat, qtd, dias_validade, prefixo_lote):
@@ -84,7 +84,8 @@ def seed_data():
                 data_fabricacao=hoje - timedelta(days=150),
                 data_validade=hoje + timedelta(days=dias_validade),
                 
-                # Novos campos normalizados
+                # --- NOVOS CAMPOS NORMALIZADOS ---
+                # Agora o fabricante e a dosagem ficam aqui no Lote
                 fabricante=fab,
                 dosagem=dosagem,
                 categoria=cat,
@@ -94,7 +95,7 @@ def seed_data():
             db.commit()
             db.refresh(lote)
             
-            # Se for um lote bom para venda, guarda na lista
+            # Se for um lote bom para venda (tem estoque e não venceu), guarda na lista
             if qtd > 0 and dias_validade > 0:
                 lotes_disponiveis.append(lote)
 
@@ -109,13 +110,12 @@ def seed_data():
     criar_lote("Paracetamol", "Teuto", "750mg", "Analgésico", 150, 25, "ALERT")
 
     # C. BAIXO ESTOQUE (Dashboard Tabela)
-    # Limite padrão é 20 unidades
     criar_lote("Losartana Potássica", "Neo Química", "50mg", "Anti-hipertensivo", 5, 300, "BAIXO") 
     criar_lote("Diazepam", "Eurofarma", "10mg", "Ansiolítico", 12, 400, "BAIXO")
 
-    # D. ESTOQUE SAUDÁVEL (Para gerar volume de saídas)
+    # D. ESTOQUE SAUDÁVEL (Verde - Para gerar volume de saídas)
     criar_lote("Dipirona Monohidratada", "Medley", "500mg", "Analgésico", 500, 700, "OK")
-    criar_lote("Dipirona Monohidratada", "EMS", "1g", "Analgésico", 300, 600, "OK") # Mesmo remédio, outro fabricante
+    criar_lote("Dipirona Monohidratada", "EMS", "1g", "Analgésico", 300, 600, "OK") # Mesmo remédio, outro detalhe
     
     criar_lote("Ibuprofeno", "Bayer", "600mg", "Anti-inflamatório", 400, 500, "OK")
     criar_lote("Metformina", "Prati", "850mg", "Antidiabético", 250, 365, "OK")
@@ -125,7 +125,7 @@ def seed_data():
 
     # ==============================================================================
     # 3. SAÍDAS / DISPENSAÇÕES (HISTÓRICO)
-    # Gera dados mês a mês para o Gráfico de Linha e Gráfico de Barras
+    # Gera dados mês a mês para o Gráfico de Linha e Relatórios
     # ==============================================================================
     print("📉 Gerando Histórico de Dispensações (Jan - Hoje)...")
     
@@ -137,7 +137,7 @@ def seed_data():
         return f"7{random.randint(10000000000000, 99999999999999)}"
 
     # Helper para nomes fictícios
-    nomes_pacientes = ["Maria Silva", "José Santos", "Ana Oliveira", "Pedro Souza", "Lucas Lima", "Carla Dias"]
+    nomes_pacientes = ["Maria Silva", "José Santos", "Ana Oliveira", "Pedro Souza", "Lucas Lima", "Carla Dias", "João da Silva"]
 
     # Loop pelos meses do ano
     for mes in range(1, mes_atual + 1):
@@ -152,7 +152,6 @@ def seed_data():
             nome_med = lote_escolhido.medicamento.nome
 
             # Lógica para viciar o gráfico de "Mais Retirados":
-            # Faz Dipirona e Amoxicilina saírem muito mais que os outros
             if nome_med == "Dipirona Monohidratada":
                 qtd_retirada = random.randint(4, 8)
             elif nome_med == "Amoxicilina":
@@ -164,7 +163,7 @@ def seed_data():
             dia_max = 28 
             data_simulada = datetime(ano_atual, mes, random.randint(1, dia_max), 10, 0, 0)
 
-            # Cria a saída sem usuário/paciente ID (apenas texto)
+            # Cria a saída sem usuário/paciente ID (apenas texto, conforme sua nova arquitetura)
             saida = Saida(
                 id_lote=lote_escolhido.id_lote,
                 # Dados do Paciente (String)
@@ -184,7 +183,7 @@ def seed_data():
     print("✅ Banco Populado com Sucesso!")
     print("   -> Teste o Dashboard: GET /api/v1/dashboard")
     print("   -> Teste a Listagem: GET /api/v1/medicamentos")
-    print("   -> Teste uma Saída: POST /api/v1/saidas (Use um numero_lote criado)")
+    print("   -> Teste o Relatório PDF: GET /api/v1/relatorios/geral/pdf")
     db.close()
 
 if __name__ == "__main__":

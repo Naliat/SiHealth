@@ -85,4 +85,24 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+        // Evita preload automático de fontes que não são usadas imediatamente
+        assetFileNames: (assetInfo) => {
+          // Mantém estrutura padrão mas evita preload de fontes .ttf
+          if (assetInfo.name && assetInfo.name.endsWith('.ttf')) {
+            return 'assets/fonts/[name][extname]'
+          }
+          return 'assets/[name]-[hash][extname]'
+        },
+      },
+    },
+  },
+  base: '/',
 })

@@ -1,0 +1,56 @@
+# docker-compose.yml
+services:
+  # 1. Banco de Dados
+  db:
+    image: postgres:15-alpine
+    container_name: sihealth-db
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=suasenha123
+      - POSTGRES_DB=SiHealth
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sihealth-net
+
+  # 2. Backend (API Python)
+  backend:
+    build: ./backend
+    container_name: sihealth-api
+    restart: always
+    depends_on:
+      - db
+    
+    # MUDANÇA AQUI: Aponta para o ficheiro .env dentro da pasta backend
+    env_file:
+      - ./backend/.env
+      
+    # Mantém apenas a sobrescrita do banco para usar o host 'db' interno
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:suasenha123@db:5432/SiHealth
+      # Remove as outras linhas (SECRET_KEY, SENHA) daqui, pois virão do arquivo acima
+      
+    ports:
+      - "8000:8000"
+    networks:
+      - sihealth-net
+
+  # 3. Frontend (Vue + Nginx)
+  frontend:
+    build: ./frontend
+    container_name: sihealth-web
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80" # O site roda na porta 80 (http://localhost)
+    networks:
+      - sihealth-net
+
+volumes:
+  postgres_data:
+
+networks:
+  sihealth-net:
+    driver: bridge

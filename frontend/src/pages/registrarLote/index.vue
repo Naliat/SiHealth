@@ -3,8 +3,8 @@
   import { computed, ref } from 'vue'
   import { useRouter } from 'vue-router'
 
-  const API_URL = 'http://localhost:8000/api/v1/lotes/'
-  const API_MEDICAMENTOS = 'http://localhost:8000/api/v1/medicamentos/'
+  const API_URL = '/api/v1/lotes/'
+  const API_MEDICAMENTOS = '/api/v1/medicamentos/'
 
   // FORM
   const form = ref({

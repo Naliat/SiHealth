@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://127.0.0.1:8000/api/v1'
+const API_BASE_URL = '/api/v1'
 export async function baixarRelatorioGeral(inicio: string, fim: string): Promise<void> {
   const url = `${API_BASE_URL}/relatorios/geral/pdf?inicio=${inicio}&fim=${fim}`
   

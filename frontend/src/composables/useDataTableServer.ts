@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { onMounted, ref, watch } from 'vue'
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api/v1'
+const API_BASE_URL = '/api/v1'
 
 export function useDataTableServer (apiUrl: string, initialOptions?: any) {
   const useParams = ref<boolean>(

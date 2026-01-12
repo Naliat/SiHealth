@@ -2,7 +2,8 @@
   import { computed, reactive, ref, watch } from 'vue'
   import { useRouter } from 'vue-router'
 
-  const API_BASE_URL = 'http://127.0.0.1:8000/api/v1'
+  const API_BASE_URL = '/api/v1'
+  const API_MEDICAMENTOS = '/api/v1/medicamentos/'
   const API_TIMEOUT = 5000
   const SYSTEM_SECRET_PASSWORD = import.meta.env.VITE_MASTER_PASSWORD || 'admin_ubs_2025'
 
@@ -23,7 +24,9 @@
     numeroReceita: null as string | null,
 
     medicamentoId: null as number | null,
+    medicamentoSearch: '' as string,
     loteId: null as number | null,
+    loteSearch: '' as string,
 
     nomeRemedioManual: null as string | null,
 
@@ -43,6 +46,8 @@
       'Outros',
     ] as string[],
     medicamentosItems: [] as any[],
+    medicamentosCache: [] as any[],
+    medicamentosCacheLoaded: false,
     lotesDisponiveisBusca: [] as LoteDetalhe[],
     loteDetalhado: null as LoteDetalhe | null,
     loading: {
@@ -102,60 +107,79 @@
     }
   }
 
-  let medicamentoSearchTimeout: ReturnType<typeof setTimeout>
-
-  async function searchMedicamentos (query: string) {
-    const q = query.trim()
-
-    clearTimeout(medicamentoSearchTimeout)
-
-    if (q.length === 0 && query !== '') {
-      state.value.medicamentosItems = []
+  async function loadMedicamentos () {
+    if (state.value.medicamentosCacheLoaded) {
       return
     }
 
-    const delay = q.length >= 2 || q.length === 0 ? 300 : 0
+    state.value.loading.medicamentos = true
 
-    medicamentoSearchTimeout = setTimeout(async () => {
-      state.value.loading.medicamentos = true
-      try {
-        const params = new URLSearchParams()
+    try {
+      const res = await fetch(API_MEDICAMENTOS, {
+        signal: AbortSignal.timeout(API_TIMEOUT),
+      })
 
-        if (q) {
-          params.append('nome', q)
-        }
-        params.append('limit', '20')
-
-        const res = await fetch(`${API_BASE_URL}/medicamentos?${params.toString()}`)
-
-        if (!res.ok) {
-          const errBody = await res.json().catch(() => null)
-          console.error('Erro ao buscar medicamentos', errBody)
-          state.value.medicamentosItems = []
-          return
-        }
-
-        const data = await res.json()
-        state.value.medicamentosItems = Array.isArray(data) ? data : data.items ?? []
-      } catch (error) {
-        console.error(error)
-        state.value.medicamentosItems = []
-      } finally {
-        state.value.loading.medicamentos = false
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`)
       }
-    }, delay)
+
+      const data = await res.json()
+      state.value.medicamentosCache = Array.isArray(data) ? data : (data.items || data.records || [])
+      state.value.medicamentosCacheLoaded = true
+      
+      // Inicializa os itens com todos os medicamentos
+      state.value.medicamentosItems = state.value.medicamentosCache
+    } catch (error) {
+      console.error('Erro ao carregar medicamentos:', error)
+      state.value.medicamentosCache = []
+      state.value.medicamentosItems = []
+    } finally {
+      state.value.loading.medicamentos = false
+    }
   }
 
-  function handleOpenMedicamentoAutocomplete () {
-    if (state.value.medicamentosItems.length === 0) {
-      searchMedicamentos('')
+  async function searchMedicamentos (query: string | null) {
+    if (query === null) {
+      return
+    }
+
+    const q = (query || '').trim()
+    form.medicamentoSearch = query || ''
+
+    // Se o cache não foi carregado, carrega primeiro
+    if (!state.value.medicamentosCacheLoaded) {
+      await loadMedicamentos()
+    }
+
+    // Filtra os medicamentos no cliente baseado na busca
+    if (q.length === 0) {
+      state.value.medicamentosItems = state.value.medicamentosCache
+    } else {
+      state.value.medicamentosItems = state.value.medicamentosCache.filter((m: any) =>
+        m.nome.toLowerCase().includes(q.toLowerCase())
+      )
+    }
+  }
+
+  async function handleOpenMedicamentoAutocomplete () {
+    // Carrega todos os medicamentos quando abre o autocomplete
+    if (!state.value.medicamentosCacheLoaded) {
+      await loadMedicamentos()
+    } else {
+      // Se já foi carregado, mostra todos os itens
+      state.value.medicamentosItems = state.value.medicamentosCache
     }
   }
 
   let loteSearchTimeout: ReturnType<typeof setTimeout>
 
-  async function searchLotes (query: string) {
-    const q = query.trim()
+  async function searchLotes (query: string | null) {
+    if (query === null) {
+      return
+    }
+
+    const q = (query || '').trim()
+    form.loteSearch = query || ''
 
     clearTimeout(loteSearchTimeout)
 
@@ -164,26 +188,16 @@
       return
     }
 
-    if (q.length === 0 && query !== '') {
-      state.value.lotesDisponiveisBusca = []
-      return
-    }
-
-    const delay = q.length >= 2 || q.length === 0 ? 300 : 0
+    // Delay para evitar muitas requisições enquanto digita
+    const delay = q.length >= 1 ? 300 : 0
 
     loteSearchTimeout = setTimeout(async () => {
       state.value.loading.lotes = true
       try {
-        const params = new URLSearchParams()
-
-        params.append('id_medicamento', String(form.medicamentoId))
-
-        if (q) {
-          params.append('numero_lote', q)
-        }
-        params.append('limit', '20')
-
-        const res = await fetch(`${API_BASE_URL}/lotes?${params.toString()}`)
+        // Usa o endpoint específico para buscar lotes por ID do medicamento
+        const res = await fetch(`${API_BASE_URL}/lotes/medicamento/${form.medicamentoId}`, {
+          signal: AbortSignal.timeout(API_TIMEOUT),
+        })
 
         if (!res.ok) {
           const errBody = await res.json().catch(() => null)
@@ -192,18 +206,23 @@
           return
         }
 
-        const data = await res.json()
-        const lotes = Array.isArray(data) ? data : data.items ?? []
+        let lotes: LoteDetalhe[] = await res.json()
+        
+        // Se há uma query, filtra por número do lote
+        if (q) {
+          lotes = lotes.filter((l: LoteDetalhe) => 
+            l.numero_lote.toLowerCase().includes(q.toLowerCase())
+          )
+        }
 
-        state.value.lotesDisponiveisBusca = lotes
-          .filter((l: LoteDetalhe) => l.medicamento?.id_medicamento === form.medicamentoId)
-          .toSorted((a: LoteDetalhe, b: LoteDetalhe) => {
-            const dateA = new Date(a.data_validade).getTime()
-            const dateB = new Date(b.data_validade).getTime()
-            return dateA - dateB
-          })
+        // Ordena por validade (mais próximos do vencimento primeiro)
+        state.value.lotesDisponiveisBusca = lotes.toSorted((a: LoteDetalhe, b: LoteDetalhe) => {
+          const dateA = new Date(a.data_validade).getTime()
+          const dateB = new Date(b.data_validade).getTime()
+          return dateA - dateB
+        })
       } catch (error) {
-        console.error(error)
+        console.error('Erro na busca de lotes:', error)
         state.value.lotesDisponiveisBusca = []
       } finally {
         state.value.loading.lotes = false
@@ -211,9 +230,28 @@
     }, delay)
   }
 
-  function handleOpenLoteAutocomplete () {
+  async function handleOpenLoteAutocomplete () {
     if (form.medicamentoId && state.value.lotesDisponiveisBusca.length === 0) {
-      searchLotes('')
+      // Carrega todos os lotes quando abre o autocomplete
+      state.value.loading.lotes = true
+      try {
+        const res = await fetch(`${API_BASE_URL}/lotes/medicamento/${form.medicamentoId}`, {
+          signal: AbortSignal.timeout(API_TIMEOUT),
+        })
+
+        if (res.ok) {
+          const lotes: LoteDetalhe[] = await res.json()
+          state.value.lotesDisponiveisBusca = lotes.toSorted((a: LoteDetalhe, b: LoteDetalhe) => {
+            const dateA = new Date(a.data_validade).getTime()
+            const dateB = new Date(b.data_validade).getTime()
+            return dateA - dateB
+          })
+        }
+      } catch (error) {
+        console.error('Erro ao carregar lotes:', error)
+      } finally {
+        state.value.loading.lotes = false
+      }
     }
   }
 
@@ -259,7 +297,9 @@
     form.nomePacienteSnapshot = null
     form.numeroReceita = null
     form.medicamentoId = null
+    form.medicamentoSearch = ''
     form.loteId = null
+    form.loteSearch = ''
     form.nomeRemedioManual = null
     form.numeroCaixas = 1
     form.quantidadePorCaixa = 1
@@ -268,7 +308,7 @@
     form.observacao = ''
     state.value.loteDetalhado = null
     state.value.lotesDisponiveisBusca = []
-    state.value.lotesDisponiveisBusca = []
+    state.value.medicamentosItems = state.value.medicamentosCache
     clearErrors()
   }
 
@@ -358,19 +398,60 @@
       form.nomeRemedioManual = newVal.medicamento?.nome || 'Nome Indisponível'
       form.quantidadePorCaixa = newVal.quantidade_por_caixa || 1
       state.value.errors.loteId = null
+      // Atualiza o campo de busca com o título do lote selecionado
+      const loteFormatado = lotesFormatados.value.find(l => l.value === newVal.id_lote)
+      if (loteFormatado) {
+        form.loteSearch = loteFormatado.title
+      }
     } else {
       form.nomeRemedioManual = null
       form.quantidadePorCaixa = 1
+      form.loteSearch = ''
     }
-    state.value.loteDetalhado = newVal
+    state.value.loteDetalhado = newVal || null
   })
 
-  watch(() => form.medicamentoId, (newVal, oldVal) => {
+  watch(() => form.medicamentoId, async (newVal, oldVal) => {
     if (newVal !== oldVal) {
-      form.loteId = null
-      state.value.lotesDisponiveisBusca = []
+      // Atualiza o campo de busca quando um medicamento é selecionado
       if (newVal) {
-        searchLotes('')
+        const medicamento = state.value.medicamentosItems.find(m => m.id_medicamento === newVal)
+        if (medicamento) {
+          form.medicamentoSearch = medicamento.nome
+        }
+        // Limpa a seleção de lote e busca os lotes do medicamento selecionado
+        form.loteId = null
+        form.loteSearch = ''
+        state.value.lotesDisponiveisBusca = []
+        state.value.loteDetalhado = null
+        
+        // Busca os lotes do medicamento selecionado
+        state.value.loading.lotes = true
+        try {
+          const res = await fetch(`${API_BASE_URL}/lotes/medicamento/${newVal}`, {
+            signal: AbortSignal.timeout(API_TIMEOUT),
+          })
+          
+          if (res.ok) {
+            const lotes: LoteDetalhe[] = await res.json()
+            state.value.lotesDisponiveisBusca = lotes.toSorted((a: LoteDetalhe, b: LoteDetalhe) => {
+              const dateA = new Date(a.data_validade).getTime()
+              const dateB = new Date(b.data_validade).getTime()
+              return dateA - dateB
+            })
+          }
+        } catch (error) {
+          console.error('Erro ao carregar lotes do medicamento:', error)
+          state.value.lotesDisponiveisBusca = []
+        } finally {
+          state.value.loading.lotes = false
+        }
+      } else {
+        form.medicamentoSearch = ''
+        form.loteId = null
+        form.loteSearch = ''
+        state.value.lotesDisponiveisBusca = []
+        state.value.loteDetalhado = null
       }
     }
   })
@@ -528,6 +609,7 @@
               <label class="input-label">Medicamento:</label>
               <v-autocomplete
                 v-model="form.medicamentoId"
+                v-model:search="form.medicamentoSearch"
                 bg-color="#f1f5f9"
                 class="rounded-input"
                 clearable
@@ -539,7 +621,8 @@
                 :loading="state.loading.medicamentos"
                 placeholder="Digite o nome do medicamento para buscar e selecionar"
                 variant="solo"
-                @click:append-inner="handleOpenMedicamentoAutocomplete"
+                @click:clear="form.medicamentoSearch = ''"
+                @focus="handleOpenMedicamentoAutocomplete"
                 @update:search="searchMedicamentos"
               />
               <div v-if="state.errors.medicamentoId" class="error-text">{{ state.errors.medicamentoId }}</div>
@@ -557,6 +640,7 @@
 
               <v-autocomplete
                 v-model="form.loteId"
+                v-model:search="form.loteSearch"
                 bg-color="#f1f5f9"
                 class="rounded-input"
                 clearable
@@ -569,6 +653,7 @@
                 :loading="state.loading.lotes"
                 :placeholder="form.medicamentoId ? 'Selecione o lote (os mais próximos do vencimento aparecem primeiro)' : 'Selecione um medicamento primeiro'"
                 variant="solo"
+                @click:clear="form.loteSearch = ''"
                 @click:append-inner="handleOpenLoteAutocomplete"
                 @update:search="searchLotes"
               />
@@ -671,6 +756,20 @@
                 flat
                 hide-details
                 :items="state.motivosSaida"
+                variant="solo"
+              />
+            </v-col>
+
+            <v-col cols="12">
+              <label class="input-label">Observação (opcional):</label>
+              <v-textarea
+                v-model="form.observacao"
+                bg-color="#f1f5f9"
+                class="rounded-input"
+                flat
+                hide-details
+                placeholder="Adicione observações adicionais sobre a saída"
+                rows="3"
                 variant="solo"
               />
             </v-col>
